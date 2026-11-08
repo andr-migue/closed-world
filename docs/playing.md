@@ -24,6 +24,8 @@ The adventurer wins when the query succeeds, and loses when every path fails, wh
 
 ## A session
 
+The terminal interface (`./closed-world`) replays a run step by step on the dungeon map. Editing the program is, for now, done in the text console (`./closed-world console`):
+
 ```text
 > level 2
 

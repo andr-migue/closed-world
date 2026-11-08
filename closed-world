@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+cd "$root"
+
+binary=build/closed-world
+
+require() {
+  command -v "$1" >/dev/null || { echo "closed-world: $1 is not installed" >&2; exit 1; }
+}
+
+build() {
+  require ghc
+  mkdir -p build/app
+  echo "Building the interface..." >&2
+  ghc -dynamic -threaded -iapp -outputdir build/app -o "$binary" app/Main.hs >/dev/null
+}
+
+needs_build() {
+  [[ ! -x "$binary" ]] || [[ -n "$(find app -name '*.hs' -newer "$binary")" ]]
+}
+
+require swipl
+
+case "${1:-}" in
+  console)
+    exec swipl prolog/console/main.pl
+    ;;
+  build)
+    build
+    ;;
+  "")
+    if needs_build; then build; fi
+    exec "$binary"
+    ;;
+  *)
+    echo "usage: ./closed-world [console | build]" >&2
+    exit 1
+    ;;
+esac

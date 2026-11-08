@@ -14,15 +14,17 @@ Every level is logically correct (the answer exists) but Prolog's search order k
 
 ### Getting started
 
-**Requirements:** [SWI-Prolog](https://www.swi-prolog.org/) 9 or later.
+**Requirements:** [SWI-Prolog](https://www.swi-prolog.org/) 9 or later, and GHC 9.6 with the `brick` and `aeson` packages for the terminal interface.
 
 ```bash
 git clone https://github.com/andr-migue/closed-world.git
 cd closed-world
-swipl prolog/console/main.pl
+./closed-world
 ```
 
-Type `levels` to list the levels, `level 1` to start, and `help` for the commands.
+The first run builds the interface. Press a number to load a level and use the arrow keys to follow the adventurer step by step.
+
+To play in plain text with Prolog only, run `./closed-world console`: type `levels` to list the levels, `level 1` to start, and `help` for the commands.
 
 ### Documentation
 

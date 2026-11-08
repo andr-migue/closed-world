@@ -101,6 +101,7 @@ closed-world/
 │   ├── text/               terms, trace events and errors as text
 │   ├── console/            playable text interface
 │   └── server/             JSON over stdio for the Haskell interface
+├── closed-world            launcher: builds the interface if needed and starts it
 ├── app/                    terminal interface in Haskell (brick)
 │   ├── Main.hs             state and keys
 │   ├── Protocol.hs         JSON types
