@@ -3,11 +3,19 @@
 :- use_module(unify).
 
 initial_state(Program, Goals, Vars, [Root]) :-
-    make_node(Program, Vars, Goals, Root).
+    mark_cuts(0, Goals, Marked),
+    make_node(Program, Vars, Marked, Root).
 
 step(_, [node(Answer, [], _)|Stack], Stack, success(Answer)).
 step(_, [node(_, [Goal|_], _)|_], [], trap) :-
     Goal == trap.
+step(Program, [node(Answer, [Goal|Goals], _)|Stack], [Node|Kept], cut(Closed)) :-
+    nonvar(Goal),
+    Goal = '$cut'(Height),
+    length(Kept, Height),
+    append(Removed, Kept, Stack),
+    closed_doors(Removed, Closed),
+    make_node(Program, Answer, Goals, Node).
 step(_, [node(_, [Goal|_], [])|Stack], Stack, backtrack) :-
     \+ builtin(Goal).
 step(Program, [node(Answer, Goals, [door(Index, Clause)|Doors])|Stack], Next, Event) :-
@@ -15,7 +23,9 @@ step(Program, [node(Answer, Goals, [door(Index, Clause)|Doors])|Stack], Next, Ev
     copy_term(Answer-Goals-Clause, Answer1-[Goal|Rest]-clause(Head, Body, _)),
     unify(Goal, Head, Result),
     (   Result == true
-    ->  append(Body, Rest, Goals1),
+    ->  length(Stack, Height),
+        mark_cuts(Height, Body, Marked),
+        append(Marked, Rest, Goals1),
         make_node(Program, Answer1, Goals1, Child),
         Next = [Child, Parent|Stack],
         Event = enter(Index, Goal)
@@ -40,6 +50,20 @@ doors(Program, [Goal|_], Doors) :-
             Doors).
 
 builtin(Goal) :- Goal == trap.
+builtin(Goal) :- nonvar(Goal), Goal = '$cut'(_).
+
+mark_cuts(Height, Goals, Marked) :-
+    maplist(mark_cut(Height), Goals, Marked).
+
+mark_cut(Height, Goal, '$cut'(Height)) :- Goal == !.
+mark_cut(_, Goal, Goal) :- Goal \== !.
+
+closed_doors(Removed, Closed) :-
+    findall(Index,
+            (   member(node(_, _, Doors), Removed),
+                member(door(Index, _), Doors)
+            ),
+            Closed).
 
 run(Program, Goals, Vars, Torch, Trace, Result) :-
     initial_state(Program, Goals, Vars, Stack),
