@@ -1,4 +1,4 @@
-:- module(engine, [initial_state/4, step/4, run/6]).
+:- module(engine, [initial_state/4, step/4, run/6, conj_list/2]).
 
 :- use_module(unify).
 
@@ -6,7 +6,20 @@ initial_state(Program, Goals, Vars, [Root]) :-
     mark_cuts(0, Goals, Marked),
     make_node(Program, Vars, Marked, Root).
 
-step(_, [node(Answer, [], _)|Stack], Stack, success(Answer)).
+step(_, [node(Answer, [], _)|Stack], Stack, success(Answer)) :-
+    Answer \= ghost(_).
+step(_, [node(ghost(Height), [], _)|Stack], Kept, not_fails) :-
+    length(Kept, Height),
+    append(_, Kept, Stack).
+step(Program, [negation(Answer, Goals)|Stack], [Node|Stack], not_succeeds) :-
+    make_node(Program, Answer, Goals, Node).
+step(Program, [node(Answer, [Goal|Goals], _)|Stack], [Ghost, negation(Answer, Goals)|Stack], not_start(Inner)) :-
+    negated(Goal, Inner),
+    length(Stack, Height),
+    conj_list(Inner, InnerGoals),
+    GhostHeight is Height + 1,
+    mark_cuts(GhostHeight, InnerGoals, Marked),
+    make_node(Program, ghost(Height), Marked, Ghost).
 step(_, [node(_, [Goal|_], _)|_], [], trap) :-
     Goal == trap.
 step(Program, [node(Answer, [Goal|Goals], _)|Stack], [Node|Kept], cut(Closed)) :-
@@ -51,6 +64,10 @@ doors(Program, [Goal|_], Doors) :-
 
 builtin(Goal) :- Goal == trap.
 builtin(Goal) :- nonvar(Goal), Goal = '$cut'(_).
+builtin(Goal) :- negated(Goal, _).
+
+negated(Goal, Inner) :- nonvar(Goal), Goal = not(Inner).
+negated(Goal, Inner) :- nonvar(Goal), Goal = (\+ Inner).
 
 mark_cuts(Height, Goals, Marked) :-
     maplist(mark_cut(Height), Goals, Marked).
@@ -64,6 +81,14 @@ closed_doors(Removed, Closed) :-
                 member(door(Index, _), Doors)
             ),
             Closed).
+
+conj_list(Goal, [Goal]) :- var(Goal), !.
+conj_list((A, B), Goals) :- !,
+    conj_list(A, GoalsA),
+    conj_list(B, GoalsB),
+    append(GoalsA, GoalsB, Goals).
+conj_list(true, []) :- !.
+conj_list(Goal, [Goal]).
 
 run(Program, Goals, Vars, Torch, Trace, Result) :-
     initial_state(Program, Goals, Vars, Stack),
