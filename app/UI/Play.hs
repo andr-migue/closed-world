@@ -1,13 +1,13 @@
-module UI.Play (playScreen, resultDialog, playKeys) where
+module UI.Play (playScreen, resultDialog, keyBar, chip, header) where
 
 import Brick
-import Brick.Widgets.Border (borderWithLabel, hBorder, vBorder)
 import Brick.Widgets.Center (centerLayer, hCenter)
 import qualified Data.Text as T
 import Editor
 import Protocol
 import State
-import UI.Dungeon
+import UI.Dungeon.Scene
+import UI.Frame
 import UI.Palette
 import UI.Panels
 import UI.Pixel (spriteImage)
@@ -17,36 +17,104 @@ import UI.Theme
 
 playScreen :: Game -> Run -> Widget Name
 playScreen game run = vBox
-  [ hBox [ padAll 1 (dungeon (follow game) (playing game && odd (frame game)) run k)
-         , vBorder
-         , hLimit 52 (vBox [programPanel (mode game) run k, statusPanel (frame game) (hint game) run k])
-         ]
-  , hBorder
-  , if null (notice game)
-      then playKeys game
-      else padLeftRight 1 (withAttr aTrap (str (notice game)))
+  [ header game (Just run)
+  , hBox
+      [ mapPanel game run
+      , hLimit 50 $ vBox $
+          [ statusPanel game run k
+          , programPanel (mode game) run k (scrollOf ProgramView game)
+          , queryPanel (mode game) run (scrollOf QueryView game)
+          ]
+          ++ [ hintPanel run | hint game ]
+          ++ [ vLimitPercent 38 (chroniclePanel run k (scrollOf ChronicleView game)) ]
+      ]
+  , footer game
   ]
   where k = stepIx game
 
+mapPanel :: Game -> Run -> Widget Name
+mapPanel game run = clickable DungeonView $ panel (Panel "DUNGEON" info aGold 0) $ \w h ->
+  (hLimit w (vLimit h (dungeon scene)), Nothing, Nothing)
+  where
+    k = stepIx game
+    level = runLevel run
+    scene = Scene
+      { scRun = run
+      , scStep = k
+      , scProgress = if k == 0 then 1 else progress game
+      , scTime = frame game
+      , scPan = pan game
+      , scTorch = fromIntegral (max 0 (torchLeft run k)) / fromIntegral (max 1 (levelTorch level))
+      , scMinimap = minimap game
+      }
+    info
+      | pan game /= (0, 0) = "panned · step to follow"
+      | otherwise = T.unpack (levelConcept level)
+
+header :: Game -> Maybe Run -> Widget Name
+header game mrun = vLimit 1 $ withDefAttr aHeader $ hBox $
+  [ withAttr aBrand (str " ◆ CLOSED WORLD ") ]
+  ++ case mrun of
+       Just run ->
+         [ withAttr aDim (str ("  Level " ++ show (levelId game) ++ "/" ++ show (length (levels game)) ++ "  "))
+         , withAttr aPanelTitle (txt (levelName (runLevel run)))
+         , withAttr aHeader (fill ' ')
+         , hBox (status run)
+         ]
+       Nothing -> [withAttr aHeader (fill ' ')]
+  where
+    status run =
+      [ withAttr aDim (str "step ")
+      , withAttr aValue (str (show (stepIx game)))
+      , withAttr aDim (str ("/" ++ show (length (runSteps run)) ++ "   "))
+      , withAttr (if playing game then aGold else aDim) (str (if playing game then "▶ playing " else "❚❚ paused "))
+      , withAttr aHeader (str " ")
+      ]
+
+footer :: Game -> Widget Name
+footer game
+  | not (null (notice game)) = vLimit 1 (hBox [withAttr aNotice (str ("  ⚠ " ++ notice game ++ "  ")), withAttr aHeader (fill ' ')])
+  | otherwise = keyBar $ case mode game of
+      Editing _ _ ->
+        [ ("arrows", "select"), ("space", "pick/drop"), ("c", "cut"), ("x", "uncut")
+        , ("u", "undo"), ("R", "reset"), ("pgup/dn", "scroll"), ("enter", "run"), ("esc", "done") ]
+      Replay
+        | stepIx game == 0 && not (playing game) ->
+            [ ("space", "release the adventurer"), ("e", "edit"), ("h", "hint"), ("m", "map")
+            , ("?", "help"), ("esc", "levels") ]
+        | otherwise ->
+            [ ("space", if playing game then "pause" else "play"), ("←/→", "step"), ("+/-", "speed")
+            , ("wasd", "pan"), ("e", "edit"), ("h", "hint"), ("pgup/dn", "scroll"), ("?", "help"), ("esc", "levels") ]
+
+keyBar :: [(String, String)] -> Widget Name
+keyBar pairs = vLimit 1 $ hBox (withAttr aHeader (str " ") : map (uncurry chip) pairs ++ [withAttr aHeader (fill ' ')])
+
+chip :: String -> String -> Widget Name
+chip k label = withAttr aKey (str (" " ++ k ++ " ")) <+> withAttr aChipLabel (str (" " ++ label ++ "  "))
+
 resultDialog :: Game -> Run -> Widget Name
-resultDialog game run = centerLayer $ hLimit 84 $ borderWithLabel (withAttr aTitle (str label)) $ padAll 1 $ vBox $
-  [ hCenter (hBox [raw (spriteImage icon), str "   ", raw (banner ink outline word)])
-  , str " "
-  , hCenter (withAttr aMessage (txt (subtitle (runMessage run))))
-  ]
-  ++ [ padTop (Pad 1) (hCenter (raw (starsImage (min (runStars run) (frame game - endFrame game))))) | won ]
-  ++ [ str " "
-     , hCenter (hBox [ withAttr aLabel (str "Torch used "), withAttr aValue (str (show (runTorchUsed run)))
-                     , withAttr aDim (str (" / " ++ show (levelTorch level) ++ "     "))
-                     , withAttr aLabel (str "Edits "), withAttr aValue (str (show (levelEdits level))) ])
-     , hCenter (withAttr aDim (str ("Par: " ++ parText (levelPar level))))
-     , str " "
-     , hCenter (hBox (actions game))
-     ]
+resultDialog game run = centerLayer $ fixedPanel (Panel title "" accent 2) 76 (if won then 20 else 16) $ \_ _ ->
+  ( vBox $
+      [ str " "
+      , hCenter (hBox [raw (spriteImage icon), str "   ", raw (banner ink outline word)])
+      , str " "
+      , hCenter (withAttr aMessage (txt (subtitle (runMessage run))))
+      ]
+      ++ [ padTop (Pad 1) (hCenter (raw (starsImage (min (runStars run) ((frame game - endFrame game) `div` 6))))) | won ]
+      ++ [ str " "
+         , hCenter (hBox [ withAttr aLabel (str "Torch used "), withAttr aValue (str (show (runTorchUsed run)))
+                         , withAttr aDim (str (" / " ++ show (levelTorch level) ++ "     "))
+                         , withAttr aLabel (str "Edits "), withAttr aValue (str (show (levelEdits level))) ])
+         , hCenter (withAttr aDim (str ("Par: " ++ parText (levelPar level))))
+         , str " "
+         , hCenter (hBox (actions game))
+         ]
+  , Nothing, Nothing )
   where
     level = runLevel run
     won   = succeeded game
-    label = if won then " Treasure " else " The adventurer failed "
+    title = if won then "TREASURE" else "THE ADVENTURER FAILED"
+    accent = if won then aGold else aCrimson
     (word, icon, ink) = case T.unpack (runResult run) of
       "success"   -> ("TREASURE", chest, inkOf goldLight gold goldDeep)
       "trap"      -> ("TRAP", skull, inkOf (255, 120, 130) crimson crimsonDeep)
@@ -65,23 +133,7 @@ inkOf top middle bottom y
 actions :: Game -> [Widget Name]
 actions game
   | succeeded game =
-      [ key "n" "next level" | hasNextLevel game ]
-      ++ [ key "e" "improve", key "space" "watch again", key "esc" "levels" ]
+      [ chip "n" "next level" | hasNextLevel game ]
+      ++ [ chip "e" "improve", chip "space" "watch again", chip "esc" "levels" ]
   | otherwise =
-      [ key "e" "edit", key "h" "hint", key "space" "watch again", key "esc" "levels" ]
-
-playKeys :: Game -> Widget Name
-playKeys game = padLeftRight 1 $ hBox $ case mode game of
-  Editing _ _ ->
-    [ key "arrows" "select", key "space" "pick/drop", key "c" "cut", key "x" "uncut"
-    , key "u" "undo", key "R" "reset", key "enter" "run", key "esc" "stop editing" ]
-  Replay
-    | stepIx game == 0 && not (playing game) ->
-        [ key "space" "release the adventurer", key "e" "edit", key "h" "hint"
-        , key "?" "help", key "esc" "levels" ]
-    | otherwise ->
-        [ key "space" (if playing game then "pause" else "play"), key "←/→" "step"
-        , key "wasd" "pan", key "e" "edit", key "h" "hint", key "?" "help", key "esc" "levels" ]
-
-key :: String -> String -> Widget Name
-key k label = withAttr aKey (str (" " ++ k ++ " ")) <+> str (" " ++ label ++ "   ")
+      [ chip "e" "edit", chip "h" "hint", chip "space" "watch again", chip "esc" "levels" ]

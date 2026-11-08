@@ -111,12 +111,19 @@ closed-world/
 │   ├── Protocol.hs         JSON types
 │   ├── Server.hs           start swipl and send requests
 │   └── UI/                 screens, panels, theme and the dungeon map
+│       ├── Canvas.hs       pixel framebuffer: drawing, dithered lighting, half-block output
+│       ├── Art.hs          small sprites for the map: hero, ghost, props, doors
+│       ├── Backdrop.hs     animated hall behind the menus
+│       ├── Frame.hs        panel frames with scrollbars in the border
+│       ├── Scroll.hs       scrollable styled lines that follow a focus
+│       ├── Panels.hs       torch, program, query, hint and chronicle panels
 │       ├── Palette.hs      fantasy palette shared by sprites and text
-│       ├── Pixel.hs        half-block sprite rendering
-│       ├── Sprites.hs      sprites as data
+│       ├── Pixel.hs        half-block icons
+│       ├── Sprites.hs      icons as data
 │       ├── PixelFont.hs    pixel font for titles and banners
 │       ├── Syntax.hs       Prolog syntax highlighting
-│       └── Dungeon/        map model (View), rooms (Room) and corridors (Corridor)
+│       └── Dungeon/        map model (View), geometry and walking routes (Layout),
+│                           rooms and corridors (Paint), lights and actors (Scene)
 └── docs/
 ```
 

@@ -26,14 +26,17 @@ Reaching the treasure earns one star, plus one for not using more torch than the
 
 ## Terminal interface
 
-Start it with `./closed-world`. It opens a menu with **Play**, **How to play** and **Quit**. Play lists the levels with the best stars earned in the session. Inside a level, the adventurer walks the dungeon map step by step; when the run ends, a dialog shows the result and what you can do next.
+Start it with `./closed-world`. It opens a menu with **Play**, **How to play** and **Quit**. Play lists the levels with the best stars earned in the session. Inside a level, the adventurer walks the dungeon map step by step, lit by a torch that shrinks as it burns; rooms left behind stay on the map, cold and faded, and a minimap shows the whole tree. Every panel scrolls when the program or the query does not fit. When the run ends, a dialog shows the result and what you can do next.
 
 | Key | Watching a run |
 | :--- | :--- |
 | `Space` | Release the adventurer, pause or resume |
 | `←` `→` | Previous / next step |
 | `Home` `End` | First / last step |
+| `+` `-` | Walk faster / slower |
 | `W` `A` `S` `D` | Pan the map (stepping follows the adventurer again) |
+| `m` | Show or hide the minimap |
+| `PgUp` `PgDn` `[` `]` | Scroll the program; the mouse wheel scrolls any panel (with `Shift`, sideways) |
 | `e` | Edit the program |
 | `h` | Show or hide the level's hint |
 | `?` | How to play |
@@ -47,6 +50,7 @@ Start it with `./closed-world`. It opens a menu with **Play**, **How to play** a
 | `c` | Insert a cut at the selection |
 | `x` | Remove the selected cut |
 | `u` / `R` | Undo the last edit / undo all edits |
+| `PgUp` `PgDn` `[` `]` | Scroll the program (the selection is always kept in view) |
 | `h` | Show or hide the level's hint |
 | `Enter` | Release the adventurer with the edited program |
 | `Esc` | Cancel a pick, or stop editing |

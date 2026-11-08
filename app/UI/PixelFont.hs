@@ -1,4 +1,4 @@
-module UI.PixelFont (banner, bannerWidth) where
+module UI.PixelFont (banner, bannerWidth, bannerPixels) where
 
 import qualified Data.Map.Strict as M
 import qualified Graphics.Vty as V
@@ -15,6 +15,9 @@ banner ink shadowInk text = V.vertCat (clearRows id (map row [0 .. 7]))
       | M.member (x, y) pixels         = Just (ink y)
       | M.member (x - 1, y - 1) pixels = Just shadowInk
       | otherwise                      = Nothing
+
+bannerPixels :: String -> [(Int, Int)]
+bannerPixels = M.keys . layout
 
 bannerWidth :: String -> Int
 bannerWidth text = sum (map glyphWidth text) + length text + 1

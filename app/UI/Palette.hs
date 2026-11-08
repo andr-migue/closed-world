@@ -10,6 +10,7 @@ module UI.Palette
   , parchment, mist, outline
   , wood, woodDeep, steel, steelDeep
   , cloak, cloakDeep, skin, bone
+  , panelBg
   ) where
 
 import qualified Graphics.Vty as V
@@ -22,6 +23,9 @@ color (r, g, b) = V.linearColor r g b
 dim :: RGB -> RGB
 dim (r, g, b) = (mix r 18, mix g 20, mix b 32)
   where mix c bg = bg + (c - bg) * 2 `div` 5
+
+panelBg :: RGB
+panelBg = (22, 20, 34)
 
 night, floorStone, floorWarm, floorGhost :: RGB
 night      = (18, 20, 32)

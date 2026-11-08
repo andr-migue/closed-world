@@ -2,23 +2,22 @@ module Main (main) where
 
 import Brick
 import Brick.BChan (newBChan, writeBChan)
-import Brick.Widgets.Border (borderWithLabel)
-import Brick.Widgets.Border.Style (unicode)
-import Brick.Widgets.Center (center, hCenter)
+import Brick.Widgets.Center (center, centerLayer, hCenter)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Monad (forever, void, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get, put, modify)
 import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 import qualified Graphics.Vty as V
 import Editor
 import Protocol
 import Server
 import State
+import UI.Backdrop (backdrop)
 import UI.Help
 import UI.Menu
+import UI.Panels (chronicleContent, programContent, queryContent)
 import UI.Play
+import UI.Scroll (Content, normalize)
 import UI.Theme
 
 main :: IO ()
@@ -29,31 +28,48 @@ main = do
         Right (LevelList l) -> (l, "")
         Left e              -> ([], "Could not start the Prolog server: " ++ e)
   ticks <- newBChan 4
-  void (forkIO (forever (writeBChan ticks Tick >> threadDelay 450000)))
-  let game = Game srv summaries (Menu 0) 1 [] Nothing 0 Replay False False True 0 0 M.empty problem
-  void (customMainWithDefaultVty (Just ticks) app game)
+  void (forkIO (forever (writeBChan ticks Tick >> threadDelay (frameMillis * 1000))))
+  void (customMainWithDefaultVty (Just ticks) app (newGame srv summaries problem))
 
 app :: App Game Tick Name
 app = App
   { appDraw         = draw
   , appChooseCursor = neverShowCursor
   , appHandleEvent  = handle
-  , appStartEvent   = pure ()
+  , appStartEvent   = do
+      vty <- getVtyHandle
+      liftIO (V.setMode (V.outputIface vty) V.Mouse True)
   , appAttrMap      = const theme
   }
 
 draw :: Game -> [Widget Name]
 draw game = map (whenFits tooSmall) $ case screen game of
-  Menu i     -> [window "" (menuScreen game i <=> noticeLine game)]
-  Levels i   -> [window "" (levelsScreen game i <=> keys [("↑/↓", "choose"), ("enter", "play"), ("esc", "menu")])]
-  Help p _   -> [window "" (helpScreen p <=> keys [("←/→", "page"), ("esc", "back")])]
+  Menu i     -> [ bottomRow (keyBar [("↑/↓", "choose"), ("enter", "select"), ("q", "quit")])
+                , lowered (menuScreen game i <=> noticeLine game)
+                , backdrop True (frame game) ]
+  Levels i   -> scenic game True (levelsScreen game i) [("↑/↓", "choose"), ("enter", "play"), ("esc", "menu")]
+  Help p _   -> scenic game True (helpScreen game p) [("←/→", "page"), ("esc", "back")]
   Playing    -> case current game of
-    Nothing  -> [window "" (noticeLine game)]
+    Nothing  -> [noticeLine game]
     Just run ->
-      [resultDialog game run | finished game, Replay <- [mode game]]
-      ++ [window (levelTitle game run) (playScreen game run)]
-  where
-    window title body = withBorderStyle unicode (borderWithLabel (withAttr aTitle (str (" CLOSED WORLD" ++ title ++ " "))) body)
+      [resultDialog game run | finished game, Replay <- [mode game], frame game - endFrame game > 8]
+      ++ [playScreen game run]
+
+scenic :: Game -> Bool -> Widget Name -> [(String, String)] -> [Widget Name]
+scenic game withHeader body pairs =
+  [ bottomRow (keyBar pairs) ]
+  ++ [ header game Nothing | withHeader ]
+  ++ [ centerLayer body, backdrop False (frame game) ]
+
+lowered :: Widget Name -> Widget Name
+lowered w = Widget Greedy Greedy $ do
+  ctx <- getContext
+  render (translateBy (Location ((availWidth ctx - 40) `div` 2, availHeight ctx * 52 `div` 100)) w)
+
+bottomRow :: Widget Name -> Widget Name
+bottomRow w = Widget Greedy Greedy $ do
+  ctx <- getContext
+  render (translateBy (Location (0, availHeight ctx - 1)) (vLimit 1 (hLimit (availWidth ctx) w)))
 
 minWidth, minHeight :: Int
 minWidth  = 120
@@ -76,31 +92,33 @@ tooSmall = Widget Greedy Greedy $ do
     , hCenter (withAttr aDim (str ("Now it is " ++ show (availWidth ctx) ++ " × " ++ show (availHeight ctx) ++ ".")))
     ]
 
-levelTitle :: Game -> Run -> String
-levelTitle game run =
-  " · " ++ show (levelId game) ++ "/" ++ show (length (levels game)) ++ " · " ++ T.unpack (levelName (runLevel run))
-
 noticeLine :: Game -> Widget Name
 noticeLine game
-  | null (notice game) = keys [("↑/↓", "choose"), ("enter", "select")]
+  | null (notice game) = emptyWidget
   | otherwise          = padLeftRight 1 (withAttr aTrap (str (notice game)))
-
-keys :: [(String, String)] -> Widget Name
-keys pairs = padLeftRight 1 $ hBox
-  [withAttr aKey (str (" " ++ k ++ " ")) <+> str (" " ++ label ++ "   ") | (k, label) <- pairs]
 
 handle :: BrickEvent Name Tick -> EventM Name Game ()
 handle (AppEvent Tick) = tick
-handle (VtyEvent (V.EvKey key _)) = do
+handle (MouseDown n button mods _) = case button of
+  V.BScrollUp   -> wheel n mods (-1)
+  V.BScrollDown -> wheel n mods 1
+  _             -> pure ()
+handle (VtyEvent (V.EvKey key mods)) = do
   game <- get
   case screen game of
     Menu i      -> menuKey i key
     Levels i    -> levelsKey i key
     Help p back -> helpKey p back key
     Playing     -> case (mode game, current game) of
-      (Editing cursor pick, Just run) -> editKey (runLevel run) cursor pick key
-      _                               -> replayKey key
+      (Editing cursor pick, Just run) -> editKey (runLevel run) cursor pick key mods
+      _                               -> replayKey key mods
 handle _ = pure ()
+
+wheel :: Name -> [V.Modifier] -> Int -> EventM Name Game ()
+wheel n mods d
+  | n == DungeonView = if V.MShift `elem` mods then pan' (8 * d) 0 else pan' 0 (6 * d)
+  | V.MShift `elem` mods = scrollPanel n (4 * d) 0
+  | otherwise = scrollPanel n 0 (2 * d)
 
 menuKey :: Int -> V.Key -> EventM Name Game ()
 menuKey i key = case key of
@@ -141,30 +159,38 @@ helpKey p back key = case key of
   V.KChar '?' -> goTo back
   _        -> pure ()
 
-replayKey :: V.Key -> EventM Name Game ()
-replayKey key = do
+replayKey :: V.Key -> [V.Modifier] -> EventM Name Game ()
+replayKey key _ = do
   game <- get
   case key of
     V.KChar ' '
-      | finished game -> modify $ \g -> g { stepIx = 0, playing = True }
-      | otherwise     -> modify $ \g -> g { playing = not (playing g) }
-    V.KRight    -> stop >> moveTo (+ 1)
-    V.KLeft     -> stop >> moveTo (subtract 1)
-    V.KHome     -> stop >> moveTo (const 0)
-    V.KEnd      -> stop >> moveTo (const maxBound)
-    V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, playing = False, notice = "" }
+      | finished game -> modify $ \g -> follow g { stepIx = 0, playing = True, stepStart = frame g }
+      | otherwise     -> modify $ \g -> g { playing = not (playing g), stepStart = if playing g then stepStart g else min (stepStart g) (frame g - stepFrames g) }
+    V.KRight    -> stop >> moveTo True (+ 1)
+    V.KLeft     -> stop >> moveTo False (subtract 1)
+    V.KHome     -> stop >> moveTo False (const 0)
+    V.KEnd      -> stop >> moveTo False (const maxBound)
+    V.KChar '+' -> changeSpeed 1
+    V.KChar '=' -> changeSpeed 1
+    V.KChar '-' -> changeSpeed (-1)
+    V.KChar 'm' -> modify $ \g -> g { minimap = not (minimap g) }
+    V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, playing = False, notice = "", scrolls = M.empty }
     V.KChar 'h' -> toggleHint
-    V.KChar 'w' -> pan 0 (-3)
-    V.KChar 's' -> pan 0 3
-    V.KChar 'a' -> pan (-8) 0
-    V.KChar 'd' -> pan 8 0
+    V.KChar 'w' -> pan' 0 (-6)
+    V.KChar 's' -> pan' 0 6
+    V.KChar 'a' -> pan' (-10) 0
+    V.KChar 'd' -> pan' 10 0
+    V.KPageUp   -> scrollPanel ProgramView 0 (-3)
+    V.KPageDown -> scrollPanel ProgramView 0 3
+    V.KChar '[' -> scrollPanel ProgramView (-6) 0
+    V.KChar ']' -> scrollPanel ProgramView 6 0
     V.KChar '?' -> stop >> goTo (Help 0 Playing)
     V.KChar 'n' | finished game, succeeded game, hasNextLevel game -> io (load (levelId game + 1))
     V.KEsc      -> stop >> goTo (Levels (levelId game - 1))
     _           -> pure ()
 
-editKey :: Level -> Cursor -> Maybe Pick -> V.Key -> EventM Name Game ()
-editKey level cursor pick key = case key of
+editKey :: Level -> Cursor -> Maybe Pick -> V.Key -> [V.Modifier] -> EventM Name Game ()
+editKey level cursor pick key _ = case key of
   V.KUp       -> moveCursorBy (-1) 0
   V.KDown     -> moveCursorBy 1 0
   V.KLeft     -> moveCursorBy 0 (-1)
@@ -180,13 +206,17 @@ editKey level cursor pick key = case key of
     if null (edits game) then say "Nothing to undo." else io (rerun (init (edits game)))
   V.KChar 'R' -> io (rerun [])
   V.KChar 'h' -> toggleHint
-  V.KEnter    -> modify $ \g -> g { mode = Replay, stepIx = 0, playing = True, notice = "" }
+  V.KPageUp   -> scrollPanel ProgramView 0 (-3)
+  V.KPageDown -> scrollPanel ProgramView 0 3
+  V.KChar '[' -> scrollPanel ProgramView (-6) 0
+  V.KChar ']' -> scrollPanel ProgramView 6 0
+  V.KEnter    -> modify $ \g -> follow g { mode = Replay, stepIx = 0, playing = True, notice = "", stepStart = frame g }
   V.KEsc      -> case pick of
     Just _  -> setMode (Editing cursor Nothing)
-    Nothing -> setMode Replay
+    Nothing -> modify $ \g -> g { mode = Replay, notice = "", scrolls = M.empty }
   _ -> pure ()
   where
-    moveCursorBy dr dc = setMode (Editing (moveCursor level dr dc cursor) pick)
+    moveCursorBy dr dc = modify $ \g -> g { mode = Editing (moveCursor level dr dc cursor) pick, notice = "", scrolls = M.empty }
     applyEdit edit = do
       game <- get
       game' <- liftIO (rerun (edits game ++ [edit]) game)
@@ -196,34 +226,45 @@ load :: Int -> Game -> IO Game
 load n game = do
   reply <- call (server game) (runRequest n [])
   pure $ case reply of
-    Right run -> game { screen = Playing, levelId = n, edits = [], current = Just run, stepIx = 0
-                      , mode = Replay, hint = False, playing = False, follow = True, notice = "" }
+    Right run -> follow game { screen = Playing, levelId = n, edits = [], current = Just run, stepIx = 0
+                             , mode = Replay, hint = False, playing = False, notice = "", stepStart = -1000 }
     Left err  -> game { notice = err }
 
 rerun :: [Edit] -> Game -> IO Game
 rerun newEdits game = do
   reply <- call (server game) (runRequest (levelId game) newEdits)
   pure $ case reply of
-    Right run -> game { edits = newEdits, current = Just run, stepIx = 0, follow = True, notice = "" }
+    Right run -> follow game { edits = newEdits, current = Just run, stepIx = 0, notice = "", stepStart = -1000 }
     Left err  -> game { notice = err }
+
+follow :: Game -> Game
+follow g = g { pan = (0, 0), scrolls = M.empty }
 
 tick :: EventM Name Game ()
 tick = do
   modify $ \g -> g { frame = frame g + 1 }
   game <- get
   case (screen game, mode game) of
-    (Playing, Replay) | playing game ->
+    (Playing, Replay) | playing game, frame game - stepStart game >= stepFrames game ->
       if stepIx game < totalSteps game
-        then moveTo (+ 1)
+        then moveTo True (+ 1)
         else stop
     _ -> pure ()
 
-moveTo :: (Int -> Int) -> EventM Name Game ()
-moveTo f = modify $ \game ->
+moveTo :: Bool -> (Int -> Int) -> EventM Name Game ()
+moveTo animate f = modify $ \game ->
   let k = max 0 (min (totalSteps game) (f (stepIx game)))
       arrived = k == totalSteps game && stepIx game /= k
-  in record game { stepIx = k, playing = playing game && k < totalSteps game, follow = True
-                 , endFrame = if arrived then frame game else endFrame game }
+      changed = k /= stepIx game
+  in record (follow game)
+       { stepIx = k
+       , playing = playing game && k < totalSteps game
+       , stepStart = if changed then (if animate then frame game else frame game - 1000) else stepStart game
+       , endFrame = if arrived then frame game + (if animate then stepFrames game else 0) else endFrame game
+       }
+
+changeSpeed :: Int -> EventM Name Game ()
+changeSpeed d = modify $ \g -> g { speed = max 0 (min (length speeds - 1) (speed g + d)) }
 
 record :: Game -> Game
 record game
@@ -236,12 +277,30 @@ fitCursor game cursor = case current game of
   Just run -> moveCursor (runLevel run) 0 0 cursor
   Nothing  -> cursor
 
-pan :: Int -> Int -> EventM Name Game ()
-pan dx dy = do
-  modify $ \g -> g { follow = False }
-  let vp = viewportScroll DungeonView
-  hScrollBy vp dx
-  vScrollBy vp dy
+pan' :: Int -> Int -> EventM Name Game ()
+pan' dx dy = modify $ \g -> let (x, y) = pan g in g { pan = (x + dx, y + dy) }
+
+scrollPanel :: Name -> Int -> Int -> EventM Name Game ()
+scrollPanel n dx dy = do
+  game <- get
+  mext <- lookupExtent n
+  case (current game, mext) of
+    (Just run, Just ext) -> do
+      let (w, h) = extentSize ext
+          iw = w - 4
+          ih = h - 2
+          content = contentFor n game run iw
+          (ox, oy) = scrollOf n game
+          delta = maybe (0, 0) (\c -> normalize c iw ih (ox + dx, oy + dy)) content
+      put game { scrolls = M.insert n delta (scrolls game) }
+    _ -> pure ()
+
+contentFor :: Name -> Game -> Run -> Int -> Maybe Content
+contentFor n game run w = case n of
+  ProgramView   -> Just (programContent (mode game) run (stepIx game))
+  QueryView     -> Just (queryContent (mode game) run)
+  ChronicleView -> Just (chronicleContent run (stepIx game) w)
+  _             -> Nothing
 
 goTo :: Screen -> EventM Name Game ()
 goTo s = modify $ \g -> g { screen = s, notice = "" }

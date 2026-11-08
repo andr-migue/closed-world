@@ -1,4 +1,4 @@
-module UI.Syntax (highlight) where
+module UI.Syntax (highlight, segments) where
 
 import Brick
 import Data.Char (isAlphaNum, isUpper)
@@ -7,6 +7,9 @@ import UI.Theme
 
 highlight :: T.Text -> Widget n
 highlight = hBox . map paint . classify . tokens
+
+segments :: T.Text -> [(AttrName, T.Text)]
+segments = map (\(k, t) -> (attrOf k, t)) . classify . tokens
 
 data Kind = Functor | Atom | Variable | Keyword | Punct
 
@@ -36,9 +39,10 @@ isName w = not (T.null w) && (isAlphaNum (T.head w) || T.head w == '_')
 
 paint :: (Kind, T.Text) -> Widget n
 paint (kind, t) = withAttr (attrOf kind) (txt t)
-  where
-    attrOf Functor  = aFunctor
-    attrOf Atom     = aAtom
-    attrOf Variable = aVariable
-    attrOf Keyword  = aKeyword
-    attrOf Punct    = aPunct
+
+attrOf :: Kind -> AttrName
+attrOf Functor  = aFunctor
+attrOf Atom     = aAtom
+attrOf Variable = aVariable
+attrOf Keyword  = aKeyword
+attrOf Punct    = aPunct

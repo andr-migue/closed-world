@@ -20,9 +20,9 @@ clearRows :: (RGB -> RGB) -> Sprite -> [V.Image]
 clearRows shade = pairs cell
   where
     cell (Just t) (Just b) = V.char (V.defAttr `V.withForeColor` color (shade t) `V.withBackColor` color (shade b)) '▀'
-    cell (Just t) Nothing  = V.char (V.defAttr `V.withForeColor` color (shade t)) '▀'
-    cell Nothing (Just b)  = V.char (V.defAttr `V.withForeColor` color (shade b)) '▄'
-    cell Nothing Nothing   = V.char V.defAttr ' '
+    cell (Just t) Nothing  = V.char (V.defAttr `V.withForeColor` color (shade t) `V.withBackColor` color panelBg) '▀'
+    cell Nothing (Just b)  = V.char (V.defAttr `V.withForeColor` color (shade b) `V.withBackColor` color panelBg) '▄'
+    cell Nothing Nothing   = V.char (V.defAttr `V.withBackColor` color panelBg) ' '
 
 scaled :: Sprite -> Sprite
 scaled = concatMap (\r -> [double r, double r])

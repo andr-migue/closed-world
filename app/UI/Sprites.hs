@@ -243,5 +243,5 @@ levelIcon n = case n of
   _ -> entrance
 
 starsImage :: Int -> V.Image
-starsImage earned = V.horizCat (concat [[spriteImage (pick i), V.char V.defAttr ' '] | i <- [1 .. 3]])
+starsImage earned = V.horizCat (concat [[spriteImage (pick i), V.charFill (V.defAttr `V.withBackColor` color panelBg) ' ' 1 3] | i <- [1 .. 3]])
   where pick i = if i <= earned then star else starEmpty

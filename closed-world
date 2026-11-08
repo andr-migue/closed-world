@@ -14,7 +14,7 @@ build() {
   require ghc
   mkdir -p build/app
   echo "Building the interface..." >&2
-  ghc -dynamic -threaded -iapp -outputdir build/app -o "$binary" app/Main.hs >/dev/null
+  ghc -O1 -dynamic -threaded -iapp -outputdir build/app -o "$binary" app/Main.hs >/dev/null
 }
 
 needs_build() {

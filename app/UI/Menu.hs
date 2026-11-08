@@ -1,58 +1,31 @@
 module UI.Menu (menuScreen, levelsScreen) where
 
 import Brick
-import Brick.Widgets.Border (borderWithLabel)
-import Brick.Widgets.Center (center, hCenter)
+import Brick.Widgets.Center (hCenter)
 import qualified Data.Map.Strict as M
 import Protocol
 import State
-import UI.Palette
+import UI.Frame
 import UI.Pixel
-import UI.PixelFont
 import UI.Sprites
 import UI.Theme
 
 menuScreen :: Game -> Int -> Widget Name
-menuScreen game selected = center $ vBox
-  [ hCenter (hBox [torch, padLeftRight 3 (raw title), torch])
-  , str " "
-  , hCenter (withAttr aMessage (str "A puzzle game where every level is a Prolog program"))
-  , str " "
-  , str " "
-  , hCenter (vBox [item i (menuLabel m) | (i, m) <- zip [0 ..] menuItems])
-  , str " "
-  , str " "
-  , hCenter (progressLine game)
-  ]
+menuScreen game selected =
+  fixedPanel (Panel "ENTER THE DUNGEON" "" aGold 2) 40 (length menuItems + 6) $ \_ _ ->
+      ( vBox ([str " "] ++ [hCenter (item i (menuLabel m)) | (i, m) <- zip [0 ..] menuItems] ++ [str " ", hCenter (progressLine game)])
+      , Nothing, Nothing )
   where
-    title = banner titleInk outline "CLOSED WORLD"
-    torch = raw (spriteImage (if even (frame game) then torchTall else flicker torchTall))
     item i label
-      | i == selected = withAttr aSelected (str ("   " ++ label ++ "   "))
-      | otherwise     = withAttr aLine (str ("   " ++ label ++ "   "))
-
-titleInk :: Int -> RGB
-titleInk y = case y of
-  0 -> goldLight
-  1 -> goldLight
-  2 -> gold
-  3 -> gold
-  4 -> gold
-  5 -> goldDeep
-  _ -> goldDeep
-
-flicker :: Sprite -> Sprite
-flicker s = case s of
-  (a : b : rest) -> map (map warm) [a, b] ++ rest
-  other          -> other
-  where warm = fmap (\c -> if c == flameLight then flame else if c == flame then flameLight else c)
+      | i == selected = withAttr aSelected (str ("  ▸ " ++ label ++ "    "))
+      | otherwise     = withAttr aLine (str ("    " ++ label ++ "    "))
 
 progressLine :: Game -> Widget Name
 progressLine game
   | null (levels game) = emptyWidget
   | otherwise = hBox
       [ withAttr aGold (str "★ "), withAttr aValue (str (show stars)), withAttr aDim (str (" / " ++ show (3 * n) ++ "   "))
-      , withAttr aEmerald (str "◆ "), withAttr aValue (str (show solved)), withAttr aDim (str (" / " ++ show n ++ " levels solved"))
+      , withAttr aEmerald (str "◆ "), withAttr aValue (str (show solved)), withAttr aDim (str (" / " ++ show n ++ " solved"))
       ]
   where
     n      = length (levels game)
@@ -60,38 +33,39 @@ progressLine game
     stars  = sum (M.elems (best game))
 
 levelsScreen :: Game -> Int -> Widget Name
-levelsScreen game selected = center $ hBox
-  [ borderWithLabel (withAttr aTitle (str " Levels ")) $ padAll 1 $ hLimit 44 $ vBox $
-      if null (levels game)
-        then [withAttr aTrap (str "No levels available.")]
-        else zipWith row [0 ..] (levels game)
+levelsScreen game selected = hBox
+  [ fixedPanel (Panel "LEVELS" (show (M.size (best game)) ++ "/" ++ show (length (levels game)) ++ " solved") aGold 2) 50 (max 20 (length (levels game) + 4)) $ \_ _ ->
+      ( vBox (str " " : if null (levels game) then [withAttr aTrap (str "No levels available.")] else zipWith row [0 ..] (levels game))
+      , Nothing, Nothing )
   , str "  "
   , card
   ]
   where
-    row i summary = hBox
+    row i summary = (if i == selected then withDefAttr aLineCurrent else id) $ hBox
       [ withAttr aGold (str (if i == selected then "▸ " else "  "))
-      , withAttr (if i == selected then aGold else aDim) (str (show (summaryId summary) ++ "  "))
-      , withAttr (if i == selected then aGold else aLine) (padRight Max (txt (summaryName summary)))
+      , withAttr (if i == selected then aGold else aDim) (str (pad2 (summaryId summary) ++ "  "))
+      , withAttr (if i == selected then aValue else aLine) (padRight Max (txt (summaryName summary)))
       , starsLine (M.lookup (summaryId summary) (best game))
       ]
+    pad2 n = if n < 10 then ' ' : show n else show n
     card = case drop selected (levels game) of
       (summary : _) -> levelCard game summary
       []            -> emptyWidget
 
 starsLine :: Maybe Int -> Widget Name
-starsLine Nothing  = withAttr aDim (str "· · ·")
-starsLine (Just n) = withAttr aGold (str (replicate n '★')) <+> withAttr aDim (str (replicate (3 - n) '☆'))
+starsLine Nothing  = withAttr aDim (str "· · · ")
+starsLine (Just n) = withAttr aGold (str (replicate n '★')) <+> withAttr aDim (str (replicate (3 - n) '☆' ++ " "))
 
 levelCard :: Game -> LevelSummary -> Widget Name
-levelCard game summary = borderWithLabel (withAttr aTitle (str (" Level " ++ show (summaryId summary) ++ " "))) $
-  padAll 1 $ hLimit 46 $ vBox
-    [ hCenter (raw (spriteImage (levelIcon (summaryId summary))))
-    , str " "
-    , hCenter (withAttr aValue (txt (summaryName summary)))
-    , hCenter (withAttr aGold (txt (summaryConcept summary)))
-    , str " "
-    , withAttr aMessage (txtWrap (summaryDescription summary))
-    , str " "
-    , hCenter (raw (starsImage (maybe 0 id (M.lookup (summaryId summary) (best game)))))
-    ]
+levelCard game summary = fixedPanel (Panel ("LEVEL " ++ show (summaryId summary)) "" aArcane 2) 50 (max 20 (length (levels game) + 4)) $ \_ _ ->
+  ( vBox
+      [ str " "
+      , hCenter (raw (spriteImage (levelIcon (summaryId summary))))
+      , str " "
+      , hCenter (withAttr aValue (txt (summaryName summary)))
+      , hCenter (withAttr aGold (txt (summaryConcept summary)))
+      , str " "
+      , withAttr aMessage (txtWrap (summaryDescription summary))
+      , padTop Max (hCenter (raw (starsImage (maybe 0 id (M.lookup (summaryId summary) (best game))))))
+      ]
+  , Nothing, Nothing )
