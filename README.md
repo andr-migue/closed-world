@@ -35,11 +35,10 @@ To play in plain text with Prolog only, run `./closed-world console`: type `leve
 
 - [x] Step-by-step engine: SLD resolution, backtracking, cut, negation, trap and torch
 - [x] Unification with occurs check
-- [x] Level format and five levels
+- [x] Level format and eight levels
 - [x] Player edits with a limited tool budget
 - [x] Playable console
 - [x] Star rating
-- [ ] Levels 6 to 8
 - [x] JSON server and dungeon layout
 - [x] Terminal interface prototype in Haskell with brick
 - [x] Program edits in the Haskell interface

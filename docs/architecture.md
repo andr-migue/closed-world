@@ -94,6 +94,7 @@ closed-world/
 │   │   ├── level/          the level format
 │   │   │   ├── reader.pl         read a level as data, for the engine
 │   │   │   ├── catalog.pl        find and number the levels
+│   │   │   ├── checker.pl        search all allowed edits for solutions and the par
 │   │   │   └── native_runner.pl  run a level with native Prolog
 │   │   ├── edit/           player edits and tool budget
 │   │   ├── dungeon/        turn a run into rooms, doors and a path

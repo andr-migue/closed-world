@@ -77,6 +77,9 @@ Start it with `./closed-world console`. It only needs SWI-Prolog.
 | 3 | The impatient ghost | Negation as failure with an unbound variable | Move one goal |
 | 4 | The key ring | Goal order | Move three goals |
 | 5 | The first door | A cut that removes solutions | Remove one cut |
+| 6 | The echoing halls | Incompleteness of depth-first search | Move one clause |
+| 7 | The locked study | Where the cut goes in a conjunction | Move one goal |
+| 8 | The cursed armory | Clause order and the scope of the cut | Move one clause, one cut |
 
 <details>
 <summary><b>Solutions</b></summary>
@@ -90,6 +93,9 @@ Start it with `./closed-world console`. It only needs SWI-Prolog.
 | 3 | `goal q 1 2` | `treasure(R)` binds `R` before `not` checks it (the cheapest; `goal 1 2 1` also works) |
 | 4 | `goal q 1 3`, `goal q 4 1` | Filtering first fits within the torch |
 | 5 | `uncut 3 2` | Without the cut, the adventurer can try the gallery |
+| 6 | `move 1 3` | The symmetric rule goes last, so the doors are tried before turning back |
+| 7 | `goal q 1 3` | A cut first removes nothing, and checking the lock first saves steps (`goal q 2 3`, cutting after the lock, also works) |
+| 8 | `move 3 4`, `cut 3 1` | The sword comes before the axe, and the cut keeps the adventurer away from the axe while still trying the south hall |
 
 </details>
 
@@ -127,3 +133,5 @@ use(gold, west).
 `name/1`, `query/1` and `torch/1` are required. `trap/0` is a game predicate that kills the adventurer on the spot.
 
 Levels are numbered by file name. To try one with plain Prolog semantics, run `swipl levels/02-cut-scope.pl` and then `?- run.`
+
+To check a level, run `./closed-world check`. For every level it tries all the edits its tools allow and reports whether it has a solution, the best torch, the fewest edits and whether the declared par matches.
