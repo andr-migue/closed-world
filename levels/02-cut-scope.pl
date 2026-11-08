@@ -1,4 +1,4 @@
-:- ensure_loaded('../tools/level').
+:- ensure_loaded('../tools/swi_runner').
 :- name("The two wings").
 :- concept("Scope of the cut").
 :- description("Gold opens the west wing, but iron is cursed. You have a single cut.").

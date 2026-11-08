@@ -1,4 +1,4 @@
-:- ensure_loaded('../tools/level').
+:- ensure_loaded('../tools/swi_runner').
 :- name("The endless corridor").
 :- concept("Clause order").
 :- description("A door leads from the entrance to the treasure, but the adventurer gets lost before seeing it.").

@@ -1,4 +1,4 @@
-:- module(level, [load_level/2]).
+:- module(level_reader, [load_level/2]).
 
 :- use_module('../engine/engine', [conj_list/2]).
 

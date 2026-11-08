@@ -1,4 +1,4 @@
-:- ensure_loaded('../tools/level').
+:- ensure_loaded('../tools/swi_runner').
 :- name("The first door").
 :- concept("A cut that removes solutions").
 :- description("The adventurer always walks through the first door in sight and never looks back.").
