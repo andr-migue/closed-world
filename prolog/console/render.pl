@@ -3,6 +3,7 @@
 
 :- use_module('../text/terms').
 :- use_module('../text/events').
+:- use_module('../text/errors').
 
 show_help(Lines) :-
     forall(member(Line, Lines), format("  ~w~n", [Line])).
@@ -35,12 +36,9 @@ show_result(Result, TorchUsed, Level) :-
     edits(Level, Edits),
     format("~n~s~nTorch used: ~w / ~w   Edits: ~w~n", [Text, TorchUsed, Level.torch, Edits]).
 
-show_error(permission_error(use, tool, Tool)) :- !,
-    format("You have no ~w left.~n", [Tool]).
-show_error(domain_error(Kind, Value)) :- !,
-    format("Invalid ~w: ~q~n", [Kind, Value]).
 show_error(Error) :-
-    format("Error: ~q~n", [Error]).
+    error_text(Error, Text),
+    format("~s~n", [Text]).
 
 tools_text([], "none").
 tools_text(Tools, Text) :-

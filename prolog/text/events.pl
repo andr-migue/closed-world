@@ -1,4 +1,4 @@
-:- module(events, [event_text/2, result_text/2]).
+:- module(events, [event_text/2, reason_text/2, result_text/2]).
 
 :- use_module(terms).
 
