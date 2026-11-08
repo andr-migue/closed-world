@@ -173,7 +173,7 @@ statusPanel game run k = Widget Greedy Fixed $ do
       chipRows = packChips (iw0 - 6) (map toolChip (levelTools level))
   render $ fixedPanel (Panel "TORCH" (if left <= 0 then "burnt out" else "") aFlame 1) w (8 + length chipRows) $ \iw _ ->
     ( vBox $
-        [ hBox [ raw (spriteImage icon), str "  ", vBox [ raw (torchBar (iw - 9) ratio (frame game)), counts iw ] ]
+        [ hBox [ raw (spriteImage icon), str "  ", vBox [ raw (torchBar (iw - 9) ratio (clock game)), counts iw ] ]
         , str " "
         ]
         ++ [ hBox (withAttr aLabel (str (if i == 0 then "Tools " else "      ")) : map snd row) | (i, row) <- zip [0 :: Int ..] chipRows ]
@@ -187,7 +187,7 @@ statusPanel game run k = Widget Greedy Fixed $ do
     ratio = fromIntegral (max 0 left) / fromIntegral (max 1 torch) :: Double
     icon
       | left <= 0 = torchOut
-      | even (frame game `div` 3) = flame1
+      | even (clock game `div` 3) = flame1
       | otherwise = flame2
     counts iw = hBox
       [ withAttr aValue (str (show (max 0 left))), withAttr aDim (str (" / " ++ show torch))

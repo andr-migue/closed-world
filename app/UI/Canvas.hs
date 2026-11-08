@@ -30,11 +30,13 @@ module UI.Canvas
 import Control.Monad (forM_, when)
 import Control.Monad.ST
 import Data.Bits (shiftL, shiftR, (.&.))
-import qualified Data.Map.Strict as Map
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as M
+import qualified Data.Text.Lazy as TL
 import qualified Graphics.Vty as V
+import Graphics.Vty.Image.Internal (Image (HorizText))
 import UI.Palette (RGB, color)
 
 type Pixel = Int
@@ -214,23 +216,35 @@ canvasImage fr (base, lit) = V.vertCat [row cy | cy <- [0 .. rows - 1]]
     w = frameW fr
     rows = frameH fr `div` 2
     pixels = shadePixels fr base lit
-    labels = Map.fromList
-      [ ((cx, cy), (ch, labelInk l, labelBold l))
+    labels = IM.fromList
+      [ (cy * w + cx, (ch, labelInk l, labelBold l))
       | l <- frameLabels fr
       , let cy = (labelY l - frameY fr) `div` 2
       , (k, ch) <- zip [0 ..] (T.unpack (labelText l))
       , let cx = labelX l - frameX fr + k
       , cx >= 0, cx < w, cy >= 0, cy < rows
       ]
-    at x y = unpack (U.unsafeIndex pixels (y * w + x))
-    row cy = V.horizCat [cell cx cy | cx <- [0 .. w - 1]]
-    cell cx cy =
-      let top = at cx (2 * cy)
-          bottom = at cx (2 * cy + 1)
-      in case Map.lookup (cx, cy) labels of
-           Just (ch, ink, bold) ->
-             let a = V.defAttr `V.withForeColor` color ink `V.withBackColor` color (mixRGB 0.5 top bottom)
-             in V.char (if bold then a `V.withStyle` V.bold else a) ch
-           Nothing
-             | top == bottom -> V.char (V.defAttr `V.withBackColor` color top) ' '
-             | otherwise     -> V.char (V.defAttr `V.withForeColor` color top `V.withBackColor` color bottom) '▀'
+    at x y = U.unsafeIndex pixels (y * w + x)
+    row cy = V.horizCat (go 0)
+      where
+        top x = at x (2 * cy)
+        bottom x = at x (2 * cy + 1)
+        labelAt x = if IM.null labels then Nothing else IM.lookup (cy * w + x) labels
+        go x
+          | x >= w = []
+          | Just (ch, ink, bold) <- labelAt x =
+              let bg = mixRGB 0.5 (unpack (top x)) (unpack (bottom x))
+                  a = V.defAttr `V.withForeColor` color ink `V.withBackColor` color bg
+              in V.char (if bold then a `V.withStyle` V.bold else a) ch : go (x + 1)
+          | otherwise =
+              let t = top x
+                  b = bottom x
+                  n = extend t b (x + 1) - x
+                  (ch, a)
+                    | t == b    = (' ', V.defAttr `V.withBackColor` color (unpack t))
+                    | otherwise = ('▀', V.defAttr `V.withForeColor` color (unpack t) `V.withBackColor` color (unpack b))
+              in HorizText a (TL.replicate (fromIntegral n) (TL.singleton ch)) n n : go (x + n)
+        extend t b x
+          | x < w && top x == t && bottom x == b && isNothingAt x = extend t b (x + 1)
+          | otherwise = x
+        isNothingAt x = IM.null labels || IM.notMember (cy * w + x) labels

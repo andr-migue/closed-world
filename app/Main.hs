@@ -17,6 +17,7 @@ import UI.Help
 import UI.Menu
 import UI.Panels (chronicleContent, programContent, queryContent)
 import UI.Play
+import UI.Dungeon.Scene (followCamera, sceneFocus)
 import UI.Scroll (Content, normalize)
 import UI.Theme
 
@@ -46,20 +47,20 @@ draw :: Game -> [Widget Name]
 draw game = map (whenFits tooSmall) $ case screen game of
   Menu i     -> [ bottomRow (keyBar [("↑/↓", "choose"), ("enter", "select"), ("q", "quit")])
                 , lowered (menuScreen game i <=> noticeLine game)
-                , backdrop True (frame game) ]
+                , backdrop True (clock game) ]
   Levels i   -> scenic game True (levelsScreen game i) [("↑/↓", "choose"), ("enter", "play"), ("esc", "menu")]
   Help p _   -> scenic game True (helpScreen game p) [("←/→", "page"), ("esc", "back")]
   Playing    -> case current game of
     Nothing  -> [noticeLine game]
     Just run ->
-      [resultDialog game run | finished game, Replay <- [mode game], frame game - endFrame game > 8]
+      [resultDialog game run | finished game, Replay <- [mode game], elapsed game (endFrame game) > 480]
       ++ [playScreen game run]
 
 scenic :: Game -> Bool -> Widget Name -> [(String, String)] -> [Widget Name]
 scenic game withHeader body pairs =
   [ bottomRow (keyBar pairs) ]
   ++ [ header game Nothing | withHeader ]
-  ++ [ centerLayer body, backdrop False (frame game) ]
+  ++ [ centerLayer body, backdrop False (clock game) ]
 
 lowered :: Widget Name -> Widget Name
 lowered w = Widget Greedy Greedy $ do
@@ -99,11 +100,12 @@ noticeLine game
 
 handle :: BrickEvent Name Tick -> EventM Name Game ()
 handle (AppEvent Tick) = tick
-handle (MouseDown n button mods _) = case button of
+handle (MouseDown n button mods _) = invalidateCache >> case button of
   V.BScrollUp   -> wheel n mods (-1)
   V.BScrollDown -> wheel n mods 1
   _             -> pure ()
 handle (VtyEvent (V.EvKey key mods)) = do
+  invalidateCache
   game <- get
   case screen game of
     Menu i      -> menuKey i key
@@ -112,6 +114,7 @@ handle (VtyEvent (V.EvKey key mods)) = do
     Playing     -> case (mode game, current game) of
       (Editing cursor pick, Just run) -> editKey (runLevel run) cursor pick key mods
       _                               -> replayKey key mods
+handle (VtyEvent _) = invalidateCache
 handle _ = pure ()
 
 wheel :: Name -> [V.Modifier] -> Int -> EventM Name Game ()
@@ -174,6 +177,7 @@ replayKey key _ = do
     V.KChar '=' -> changeSpeed 1
     V.KChar '-' -> changeSpeed (-1)
     V.KChar 'm' -> modify $ \g -> g { minimap = not (minimap g) }
+    V.KChar 'f' -> modify $ \g -> g { fluid = not (fluid g), notice = if fluid g then "Eco mode: 15 fps, lighter on the CPU." else "Fluid mode: 30 fps while the adventurer walks." }
     V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, playing = False, notice = "", scrolls = M.empty }
     V.KChar 'h' -> toggleHint
     V.KChar 'w' -> pan' 0 (-6)
@@ -226,7 +230,7 @@ load :: Int -> Game -> IO Game
 load n game = do
   reply <- call (server game) (runRequest n [])
   pure $ case reply of
-    Right run -> follow game { screen = Playing, levelId = n, edits = [], current = Just run, stepIx = 0
+    Right run -> follow game { screen = Playing, levelId = n, edits = [], current = Just run, stepIx = 0, camera = Nothing
                              , mode = Replay, hint = False, playing = False, notice = "", stepStart = -1000 }
     Left err  -> game { notice = err }
 
@@ -234,7 +238,7 @@ rerun :: [Edit] -> Game -> IO Game
 rerun newEdits game = do
   reply <- call (server game) (runRequest (levelId game) newEdits)
   pure $ case reply of
-    Right run -> follow game { edits = newEdits, current = Just run, stepIx = 0, notice = "", stepStart = -1000 }
+    Right run -> follow game { edits = newEdits, current = Just run, stepIx = 0, notice = "", stepStart = -1000, camera = Nothing }
     Left err  -> game { notice = err }
 
 follow :: Game -> Game
@@ -243,13 +247,25 @@ follow g = g { pan = (0, 0), scrolls = M.empty }
 tick :: EventM Name Game ()
 tick = do
   modify $ \g -> g { frame = frame g + 1 }
+  mext <- lookupExtent DungeonView
+  modify $ \g -> case (screen g, current g, mext) of
+    (Playing, Just run, Just ext) ->
+      let (w, h) = extentSize ext
+          p = if stepIx g == 0 then 1 else progress g
+      in g { camera = Just (followCamera (w - 2, 2 * (h - 2)) (sceneFocus run (stepIx g) p) (camera g)) }
+    _ -> g
   game <- get
   case (screen game, mode game) of
     (Playing, Replay) | playing game, frame game - stepStart game >= stepFrames game ->
       if stepIx game < totalSteps game
-        then moveTo True (+ 1)
-        else stop
-    _ -> pure ()
+        then invalidateCache >> moveTo True (+ 1)
+        else invalidateCache >> stop
+    _ -> do
+      let moving = case (screen game, mode game) of
+            (Playing, Replay) -> fluid game && (playing game || progress game < 1)
+            _ -> False
+          ticked = clock game /= clock game { frame = frame game - 1 }
+      when (not moving && not ticked) continueWithoutRedraw
 
 moveTo :: Bool -> (Int -> Int) -> EventM Name Game ()
 moveTo animate f = modify $ \game ->

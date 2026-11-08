@@ -3,6 +3,8 @@ module UI.Dungeon.Scene
   , dungeon
   , sceneFrame
   , sceneImage
+  , sceneFocus
+  , followCamera
   ) where
 
 import Brick
@@ -10,7 +12,7 @@ import Control.Monad (forM_, when)
 import Control.Monad.ST
 import Data.List (sortOn)
 import qualified Data.Map.Strict as M
-import Data.Maybe (listToMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Graphics.Vty as V
@@ -31,6 +33,7 @@ data Scene = Scene
   , scPan      :: (Int, Int)
   , scTorch    :: Double
   , scMinimap  :: Bool
+  , scCamera   :: Maybe (Double, Double)
   }
 
 dungeon :: Scene -> Widget Name
@@ -42,6 +45,25 @@ dungeon sc = Widget Greedy Greedy $ do
 
 sceneImage :: Scene -> Int -> Int -> V.Image
 sceneImage sc w h = let (fr, px) = sceneFrame sc w h in canvasImage fr px
+
+sceneFocus :: Run -> Int -> Double -> (Double, Double)
+sceneFocus run k p = let ly = layout run in focusOf ly (castAt ly run k p)
+
+focusOf :: Layout -> Cast -> (Double, Double)
+focusOf ly cast = maybe (fromIntegral (lyWidth ly) / 2, fromIntegral (lyHeight ly) / 2) (\a -> (actorX a, actorY a - 6)) focus
+  where
+    focus = case castGhost cast of
+      Just g | actorAlpha g > 0.3 -> Just g
+      _ -> castHero cast
+
+followCamera :: (Int, Int) -> (Double, Double) -> Maybe (Double, Double) -> (Double, Double)
+followCamera _ target Nothing = target
+followCamera (vw, vh) (tx, ty) (Just (cx, cy)) = (push cx tx (0.18 * fromIntegral vw), push cy ty (0.15 * fromIntegral vh))
+  where
+    push c t slack
+      | t - c > slack  = t - slack
+      | c - t > slack  = t + slack
+      | otherwise      = c
 
 data Cast = Cast
   { castHero  :: Maybe Actor
@@ -61,13 +83,9 @@ sceneFrame sc w h = (fr, pixels)
     room i = M.lookup i (lyRooms ly)
     viewOf r = M.lookup (roomId r) views
     cast  = castAt ly run k (scProgress sc)
-    focus = case castGhost cast of
-      Just g | actorAlpha g > 0.3 -> Just g
-      _ -> castHero cast
     pw = w
     ph = h * 2
-    (fx, fy) = maybe (fromIntegral (lyWidth ly) / 2, fromIntegral (lyHeight ly) / 2)
-                     (\a -> (actorX a, actorY a - 6)) focus
+    (fx, fy) = fromMaybe (focusOf ly cast) (scCamera sc)
     camX0 = round fx - pw `div` 2 + fst (scPan sc)
     camY0 = round fy - ph `div` 2 + snd (scPan sc)
     camX = fit camX0 pw (lyWidth ly)

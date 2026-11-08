@@ -17,18 +17,18 @@ import UI.Theme
 
 playScreen :: Game -> Run -> Widget Name
 playScreen game run = vBox
-  [ header game (Just run)
+  [ cached CacheHeader (header game (Just run))
   , hBox
       [ mapPanel game run
       , hLimit 50 $ vBox $
           [ statusPanel game run k
-          , programPanel (mode game) run k (scrollOf ProgramView game)
-          , queryPanel (mode game) run (scrollOf QueryView game)
+          , cached CacheProgram (programPanel (mode game) run k (scrollOf ProgramView game))
+          , cached CacheQuery (queryPanel (mode game) run (scrollOf QueryView game))
           ]
           ++ [ hintPanel run | hint game ]
-          ++ [ vLimitPercent 38 (chroniclePanel run k (scrollOf ChronicleView game)) ]
+          ++ [ vLimitPercent 38 (cached CacheChronicle (chroniclePanel run k (scrollOf ChronicleView game))) ]
       ]
-  , footer game
+  , cached CacheFooter (footer game)
   ]
   where k = stepIx game
 
@@ -42,10 +42,11 @@ mapPanel game run = clickable DungeonView $ panel (Panel "DUNGEON" info aGold 0)
       { scRun = run
       , scStep = k
       , scProgress = if k == 0 then 1 else progress game
-      , scTime = frame game
+      , scTime = clock game
       , scPan = pan game
       , scTorch = fromIntegral (max 0 (torchLeft run k)) / fromIntegral (max 1 (levelTorch level))
       , scMinimap = minimap game
+      , scCamera = camera game
       }
     info
       | pan game /= (0, 0) = "panned · step to follow"
@@ -100,7 +101,7 @@ resultDialog game run = centerLayer $ fixedPanel (Panel title "" accent 2) 76 (i
       , str " "
       , hCenter (withAttr aMessage (txt (subtitle (runMessage run))))
       ]
-      ++ [ padTop (Pad 1) (hCenter (raw (starsImage (min (runStars run) ((frame game - endFrame game) `div` 6))))) | won ]
+      ++ [ padTop (Pad 1) (hCenter (raw (starsImage (min (runStars run) (elapsed game (endFrame game) `div` 360))))) | won ]
       ++ [ str " "
          , hCenter (hBox [ withAttr aLabel (str "Torch used "), withAttr aValue (str (show (runTorchUsed run)))
                          , withAttr aDim (str (" / " ++ show (levelTorch level) ++ "     "))

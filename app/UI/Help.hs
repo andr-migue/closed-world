@@ -39,6 +39,7 @@ helpPages =
       , "  + -            walk faster / slower"
       , "  W A S D        pan the map; stepping follows the adventurer again"
       , "  m              show or hide the minimap"
+      , "  f              fluid (30 fps) or eco (15 fps) animation"
       , "  PgUp PgDn [ ]  scroll the program; the wheel scrolls any panel"
       , "  e              edit the program"
       , "  h              show or hide the level's hint"

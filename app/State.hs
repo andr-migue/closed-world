@@ -17,6 +17,8 @@ module State
   , torchLeft
   , scrollOf
   , frameMillis
+  , clock
+  , elapsed
   ) where
 
 import qualified Data.Map.Strict as M
@@ -48,6 +50,8 @@ data Game = Game
   , notice    :: String
   , scrolls   :: M.Map Name (Int, Int)
   , minimap   :: Bool
+  , camera    :: Maybe (Double, Double)
+  , fluid     :: Bool
   }
 
 data Tick = Tick
@@ -59,11 +63,17 @@ newGame :: Server -> [LevelSummary] -> String -> Game
 newGame srv summaries problem = Game
   { server = srv, levels = summaries, screen = Menu 0, levelId = 1, edits = [], current = Nothing
   , stepIx = 0, mode = Replay, hint = False, playing = False, frame = 0, stepStart = -1000
-  , speed = 1, pan = (0, 0), endFrame = 0, best = M.empty, notice = problem
-  , scrolls = M.empty, minimap = True }
+  , speed = 0, pan = (0, 0), endFrame = 0, best = M.empty, notice = problem
+  , scrolls = M.empty, minimap = True, camera = Nothing, fluid = True }
 
 frameMillis :: Int
-frameMillis = 60
+frameMillis = 33
+
+clock :: Game -> Int
+clock game = frame game * frameMillis `div` 60
+
+elapsed :: Game -> Int -> Int
+elapsed game since = (frame game - since) * frameMillis
 
 menuItems :: [MenuItem]
 menuItems = [minBound .. maxBound]
@@ -74,10 +84,10 @@ menuLabel HelpItem = "How to play"
 menuLabel QuitItem = "Quit"
 
 speeds :: [Int]
-speeds = [18, 11, 6, 3]
+speeds = [1080, 660, 360, 180]
 
 stepFrames :: Game -> Int
-stepFrames game = speeds !! max 0 (min (length speeds - 1) (speed game))
+stepFrames game = (speeds !! max 0 (min (length speeds - 1) (speed game))) `div` frameMillis
 
 progress :: Game -> Double
 progress game = max 0 (min 1 (fromIntegral (frame game - stepStart game) / fromIntegral (stepFrames game)))

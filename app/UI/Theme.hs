@@ -17,6 +17,7 @@ import qualified Graphics.Vty as V
 import UI.Palette
 
 data Name = DungeonView | ProgramView | QueryView | ChronicleView
+  | CacheHeader | CacheFooter | CacheProgram | CacheQuery | CacheChronicle
   deriving (Eq, Ord, Show)
 
 appBg :: RGB
