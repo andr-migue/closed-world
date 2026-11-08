@@ -22,44 +22,33 @@ The adventurer wins when the query succeeds, and loses when every path fails, wh
 > [!NOTE]
 > A torch that runs out does not prove that a program never terminates — only that it took more steps than the level allows.
 
-## A session
+## Terminal interface
 
-The terminal interface (`./closed-world`) replays a run step by step on the dungeon map. Editing the program is, for now, done in the text console (`./closed-world console`):
+Start it with `./closed-world`. It replays each run step by step on the dungeon map.
 
-```text
-> level 2
+| Key | Replay mode |
+| :--- | :--- |
+| `←` `→` | Previous / next step |
+| `Home` `End` | First / last step |
+| `1`–`9` | Load a level |
+| `e` | Edit the program |
+| `q` | Quit |
 
-== The two wings ==  (Scope of the cut)
-Gold opens the west wing, but iron is cursed. You have a single cut.
+| Key | Edit mode |
+| :--- | :--- |
+| Arrows | Select a clause head, a goal, or the end of a body |
+| `Space` | Pick the selection, then drop it at the new position |
+| `c` | Insert a cut at the selection |
+| `x` | Remove the selected cut |
+| `u` / `R` | Undo the last edit / undo all edits |
+| `Enter` | Release the adventurer with the edited program |
+| `Esc` | Cancel a pick, or go back to replay |
 
-  1  wing(east).
-  2  wing(west).
-  3  take(gold).
-  4  take(iron) :- trap.
-  5  use(gold, west).
+A head moves the whole clause; a goal moves within its own clause or query.
 
-  ?- wing(W), take(M), use(M, W).
+## Text console
 
-Torch: 30   Tools: add_cut ×1   Edits: 0
-
-> run
-  [1] door 1 opens: wing(east)
-  [2] door 3 opens: take(gold)
-  [3] door 5 stays shut for use(gold, east) (east does not match west)
-  [4] dead end, going back
-  [5] door 4 opens: take(iron)
-  [6] TRAP!
-
-The adventurer fell into a trap.
-
-> cut 3 1
-> run
-  ...
-TREASURE! W = west, M = gold
-Torch used: 9 / 30   Edits: 1
-```
-
-## Commands
+Start it with `./closed-world console`. It only needs SWI-Prolog.
 
 | Command | Effect |
 | :--- | :--- |

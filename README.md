@@ -42,7 +42,8 @@ To play in plain text with Prolog only, run `./closed-world console`: type `leve
 - [ ] Levels 6 to 8
 - [x] JSON server and dungeon layout
 - [x] Terminal interface prototype in Haskell with brick
-- [ ] Edits, half-block pixel art and fog memory in the Haskell interface
+- [x] Program edits in the Haskell interface
+- [ ] Half-block pixel art and fog memory in the Haskell interface
 - [ ] Trace analyzer: SLD tree and metrics
 
 > [!NOTE]

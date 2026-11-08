@@ -104,6 +104,7 @@ closed-world/
 ├── closed-world            launcher: builds the interface if needed and starts it
 ├── app/                    terminal interface in Haskell (brick)
 │   ├── Main.hs             state and keys
+│   ├── Editor.hs           edit cursor and edits, as pure functions
 │   ├── Protocol.hs         JSON types
 │   ├── Server.hs           start swipl and send requests
 │   └── UI/                 dungeon, panels and theme
