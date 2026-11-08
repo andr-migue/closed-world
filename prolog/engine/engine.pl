@@ -1,5 +1,7 @@
 :- module(engine, [initial_state/4, step/4, run/6]).
 
+:- use_module(unify).
+
 initial_state(Program, Goals, Vars, [Root]) :-
     make_node(Program, Vars, Goals, Root).
 
@@ -8,13 +10,14 @@ step(_, [node(_, [_|_], [])|Stack], Stack, backtrack).
 step(Program, [node(Answer, Goals, [door(Index, Clause)|Doors])|Stack], Next, Event) :-
     Parent = node(Answer, Goals, Doors),
     copy_term(Answer-Goals-Clause, Answer1-[Goal|Rest]-clause(Head, Body, _)),
-    (   Goal = Head
+    unify(Goal, Head, Result),
+    (   Result == true
     ->  append(Body, Rest, Goals1),
         make_node(Program, Answer1, Goals1, Child),
         Next = [Child, Parent|Stack],
         Event = enter(Index, Goal)
     ;   Next = [Parent|Stack],
-        Event = mismatch(Index, Goal)
+        Event = mismatch(Index, Goal, Result)
     ).
 
 make_node(Program, Answer, Goals, node(Answer, Goals, Doors)) :-
