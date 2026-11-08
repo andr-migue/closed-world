@@ -30,6 +30,8 @@ data Game = Game
   , mode    :: Mode
   , hint    :: Bool
   , playing :: Bool
+  , follow  :: Bool
+  , frame   :: Int
   , best    :: M.Map Int Int
   , notice  :: String
   }

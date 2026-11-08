@@ -23,6 +23,7 @@ data LevelSummary = LevelSummary
   { summaryId      :: Int
   , summaryName    :: Text
   , summaryConcept :: Text
+  , summaryDescription :: Text
   }
 
 newtype LevelList = LevelList [LevelSummary]
@@ -97,13 +98,15 @@ data Room = Room
 
 data Door = Door
   { doorRoom   :: Int
+  , doorClause :: Maybe Int
   , doorStatus :: Text
+  , doorTarget :: Maybe Int
   , doorStep   :: Int
   }
 
 instance FromJSON LevelSummary where
   parseJSON = withObject "LevelSummary" $ \o ->
-    LevelSummary <$> o .: "id" <*> o .: "name" <*> o .: "concept"
+    LevelSummary <$> o .: "id" <*> o .: "name" <*> o .: "concept" <*> o .:? "description" .!= ""
 
 instance FromJSON LevelList where
   parseJSON = withObject "LevelList" $ \o -> LevelList <$> o .: "levels"
@@ -157,7 +160,7 @@ instance FromJSON Room where
 
 instance FromJSON Door where
   parseJSON = withObject "Door" $ \o ->
-    Door <$> o .: "room" <*> o .: "status" <*> o .: "step"
+    Door <$> o .: "room" <*> o .:? "clause" <*> o .: "status" <*> o .:? "target" <*> o .: "step"
 
 levelsRequest :: Value
 levelsRequest = object ["op" .= ("levels" :: Text)]

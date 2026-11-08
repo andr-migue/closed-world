@@ -2,7 +2,9 @@ module UI.Help (helpScreen, helpPages) where
 
 import Brick
 import Brick.Widgets.Border (borderWithLabel)
-import Brick.Widgets.Center (center)
+import Brick.Widgets.Center (center, hCenter)
+import UI.Pixel (spriteImage)
+import UI.Sprites
 import UI.Theme
 
 helpPages :: [(String, [String])]
@@ -25,6 +27,7 @@ helpPages =
       , "  Dead end         no clause left: the adventurer goes back"
       , "  Closed door      a door removed by a cut"
       , "  Ghost            not/1 exploring ahead on its own"
+      , "  Lit corridors    the current branch; faded ones were left behind"
       , "  Torch            one unit per step: when it runs out, you lose"
       , "  Trap             trap/0 kills the adventurer on the spot"
       ] )
@@ -32,6 +35,7 @@ helpPages =
     , [ "  space          release the adventurer, pause or resume"
       , "  ← →            previous / next step"
       , "  Home End       first / last step"
+      , "  W A S D        pan the map; stepping follows the adventurer again"
       , "  e              edit the program"
       , "  h              show or hide the level's hint"
       , "  ?              this help"
@@ -59,10 +63,17 @@ helpPages =
 
 helpScreen :: Int -> Widget Name
 helpScreen page = center $ hLimit 78 $ borderWithLabel (str label) $ padAll 1 $ vBox $
-  map line body ++ [str " ", withAttr aDim (str pager)]
+  map line body ++ legend ++ [str " ", withAttr aDim (str pager)]
   where
     (title, body) = helpPages !! page
     label = " How to play · " ++ title ++ " "
     line "" = str " "
     line l  = withAttr aLine (str l)
     pager = "page " ++ show (page + 1) ++ " of " ++ show (length helpPages)
+    legend
+      | page == 1 = [str " ", hCenter (hBox (map figure figures))]
+      | otherwise = []
+    figure (s, name) = padLeftRight 1 (vBox [hCenter (raw (spriteImage s)), hCenter (withAttr aDim (str name))])
+    figures =
+      [ (adventurer, "you"), (entrance, "entrance"), (chest, "treasure"), (skull, "trap")
+      , (rubble, "dead end"), (ghost, "ghost"), (portal, "exit") ]

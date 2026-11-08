@@ -29,7 +29,7 @@ main = do
         Left e              -> ([], "Could not start the Prolog server: " ++ e)
   ticks <- newBChan 4
   void (forkIO (forever (writeBChan ticks Tick >> threadDelay 450000)))
-  let game = Game srv summaries (Menu 0) 1 [] Nothing 0 Replay False False M.empty problem
+  let game = Game srv summaries (Menu 0) 1 [] Nothing 0 Replay False False True 0 M.empty problem
   void (customMainWithDefaultVty (Just ticks) app game)
 
 app :: App Game Tick Name
@@ -132,6 +132,10 @@ replayKey key = do
     V.KEnd      -> stop >> moveTo (const maxBound)
     V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, playing = False, notice = "" }
     V.KChar 'h' -> toggleHint
+    V.KChar 'w' -> pan 0 (-3)
+    V.KChar 's' -> pan 0 3
+    V.KChar 'a' -> pan (-8) 0
+    V.KChar 'd' -> pan 8 0
     V.KChar '?' -> stop >> goTo (Help 0 Playing)
     V.KChar 'n' | finished game, succeeded game, hasNextLevel game -> io (load (levelId game + 1))
     V.KEsc      -> stop >> goTo (Levels (levelId game - 1))
@@ -171,18 +175,19 @@ load n game = do
   reply <- call (server game) (runRequest n [])
   pure $ case reply of
     Right run -> game { screen = Playing, levelId = n, edits = [], current = Just run, stepIx = 0
-                      , mode = Replay, hint = False, playing = False, notice = "" }
+                      , mode = Replay, hint = False, playing = False, follow = True, notice = "" }
     Left err  -> game { notice = err }
 
 rerun :: [Edit] -> Game -> IO Game
 rerun newEdits game = do
   reply <- call (server game) (runRequest (levelId game) newEdits)
   pure $ case reply of
-    Right run -> game { edits = newEdits, current = Just run, stepIx = 0, notice = "" }
+    Right run -> game { edits = newEdits, current = Just run, stepIx = 0, follow = True, notice = "" }
     Left err  -> game { notice = err }
 
 tick :: EventM Name Game ()
 tick = do
+  modify $ \g -> g { frame = frame g + 1 }
   game <- get
   case (screen game, mode game) of
     (Playing, Replay) | playing game ->
@@ -194,7 +199,7 @@ tick = do
 moveTo :: (Int -> Int) -> EventM Name Game ()
 moveTo f = modify $ \game ->
   let k = max 0 (min (totalSteps game) (f (stepIx game)))
-  in record game { stepIx = k, playing = playing game && k < totalSteps game }
+  in record game { stepIx = k, playing = playing game && k < totalSteps game, follow = True }
 
 record :: Game -> Game
 record game
@@ -206,6 +211,13 @@ fitCursor :: Game -> Cursor -> Cursor
 fitCursor game cursor = case current game of
   Just run -> moveCursor (runLevel run) 0 0 cursor
   Nothing  -> cursor
+
+pan :: Int -> Int -> EventM Name Game ()
+pan dx dy = do
+  modify $ \g -> g { follow = False }
+  let vp = viewportScroll DungeonView
+  hScrollBy vp dx
+  vScrollBy vp dy
 
 goTo :: Screen -> EventM Name Game ()
 goTo s = modify $ \g -> g { screen = s, notice = "" }

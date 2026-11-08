@@ -1,8 +1,11 @@
 module UI.Theme
   ( Name (..)
   , theme
-  , aTitle, aRoom, aCurrent, aGhost, aTreasure, aTrap, aDeadEnd
-  , aConnector, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked, aHint, aSelected, aDim
+  , aTitle, aTreasure, aTrap, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked
+  , aHint, aSelected, aDim, aLabel, aValue
+  , aFunctor, aAtom, aVariable, aPunct, aKeyword
+  , aBarHigh, aBarMid, aBarLow, aBarEmpty
+  , aGold, aCrimson, aArcane, aSteel, aEmerald
   ) where
 
 import Brick
@@ -10,20 +13,19 @@ import Brick.Util (fg, on)
 import Brick.Widgets.Border (borderAttr)
 import Brick.Widgets.ProgressBar (progressCompleteAttr, progressIncompleteAttr)
 import qualified Graphics.Vty as V
+import UI.Palette
 
 data Name = DungeonView
   deriving (Eq, Ord, Show)
 
-aTitle, aRoom, aCurrent, aGhost, aTreasure, aTrap, aDeadEnd,
-  aConnector, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked, aHint, aSelected, aDim :: AttrName
+aTitle, aTreasure, aTrap, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked,
+  aHint, aSelected, aDim, aLabel, aValue,
+  aFunctor, aAtom, aVariable, aPunct, aKeyword,
+  aBarHigh, aBarMid, aBarLow, aBarEmpty,
+  aGold, aCrimson, aArcane, aSteel, aEmerald :: AttrName
 aTitle       = attrName "title"
-aRoom        = attrName "room"
-aCurrent     = attrName "current"
-aGhost       = attrName "ghost"
 aTreasure    = attrName "treasure"
 aTrap        = attrName "trap"
-aDeadEnd     = attrName "deadEnd"
-aConnector   = attrName "connector"
 aLine        = attrName "line"
 aLineCurrent = attrName "lineCurrent"
 aMessage     = attrName "message"
@@ -33,30 +35,64 @@ aPicked      = attrName "picked"
 aHint        = attrName "hint"
 aSelected    = attrName "selected"
 aDim         = attrName "dim"
+aLabel       = attrName "label"
+aValue       = attrName "value"
+aFunctor     = attrName "functor"
+aAtom        = attrName "atom"
+aVariable    = attrName "variable"
+aPunct       = attrName "punct"
+aKeyword     = attrName "keyword"
+aBarHigh     = attrName "barHigh"
+aBarMid      = attrName "barMid"
+aBarLow      = attrName "barLow"
+aBarEmpty    = attrName "barEmpty"
+aGold        = attrName "gold"
+aCrimson     = attrName "crimson"
+aArcane      = attrName "arcane"
+aSteel       = attrName "steel"
+aEmerald     = attrName "emerald"
 
-rgb :: Int -> Int -> Int -> V.Color
-rgb = V.linearColor
+ink :: RGB -> V.Attr
+ink = fg . color
+
+bold, italic :: V.Attr -> V.Attr
+bold a   = a `V.withStyle` V.bold
+italic a = a `V.withStyle` V.italic
+
+on' :: RGB -> RGB -> V.Attr
+on' f b = color f `on` color b
 
 theme :: AttrMap
 theme = attrMap V.defAttr
-  [ (aTitle,       fg (rgb 255 200 80) `V.withStyle` V.bold)
-  , (borderAttr,   fg (rgb 110 110 140))
-  , (aRoom,        fg (rgb 200 200 215))
-  , (aCurrent,     fg (rgb 255 220 120) `V.withStyle` V.bold)
-  , (aGhost,       fg (rgb 160 190 255))
-  , (aTreasure,    fg (rgb 255 210 60) `V.withStyle` V.bold)
-  , (aTrap,        fg (rgb 255 80 80) `V.withStyle` V.bold)
-  , (aDeadEnd,     fg (rgb 120 120 135))
-  , (aConnector,   fg (rgb 200 170 110))
-  , (aLine,        fg (rgb 190 190 200))
-  , (aLineCurrent, rgb 255 255 255 `on` rgb 60 55 90)
-  , (aMessage,     fg (rgb 230 210 170) `V.withStyle` V.italic)
-  , (aKey,         rgb 20 20 30 `on` rgb 200 170 110)
-  , (aCursor,      rgb 20 20 30 `on` rgb 255 200 80)
-  , (aPicked,      rgb 255 255 255 `on` rgb 70 90 160)
-  , (aHint,        fg (rgb 160 220 170) `V.withStyle` V.italic)
-  , (aSelected,    rgb 20 20 30 `on` rgb 255 200 80 `V.withStyle` V.bold)
-  , (aDim,         fg (rgb 120 120 140))
-  , (progressCompleteAttr,   rgb 20 20 20 `on` rgb 255 150 30)
-  , (progressIncompleteAttr, rgb 200 200 200 `on` rgb 60 50 50)
+  [ (aTitle,       bold (ink gold))
+  , (borderAttr,   ink wallShadow)
+  , (aTreasure,    bold (ink gold))
+  , (aTrap,        bold (ink crimson))
+  , (aLine,        ink parchment)
+  , (aLineCurrent, V.defAttr `V.withBackColor` color (58, 50, 86))
+  , (aMessage,     italic (ink parchment))
+  , (aKey,         on' outline gold)
+  , (aCursor,      on' outline gold)
+  , (aPicked,      on' parchment arcaneDeep)
+  , (aHint,        italic (ink emerald))
+  , (aSelected,    bold (on' outline gold))
+  , (aDim,         ink mist)
+  , (aLabel,       ink mist)
+  , (aValue,       bold (ink parchment))
+  , (aFunctor,     ink (126, 176, 255))
+  , (aAtom,        ink emerald)
+  , (aVariable,    bold (ink flame))
+  , (aPunct,       ink mist)
+  , (aKeyword,     bold (ink crimson))
+  , (aBarHigh,     on' outline flame)
+  , (aBarMid,      on' outline ember)
+  , (aBarLow,      on' parchment crimson)
+  , (aBarEmpty,    on' mist (40, 36, 52))
+  , (aGold,        bold (ink gold))
+  , (aCrimson,     bold (ink crimson))
+  , (aArcane,      bold (ink arcane))
+  , (aSteel,       ink steel)
+  , (aEmerald,     bold (ink emerald))
+  , (progressCompleteAttr,   on' outline flame)
+  , (progressIncompleteAttr, on' mist (40, 36, 52))
   ]
