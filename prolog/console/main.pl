@@ -2,6 +2,7 @@
 :- use_module('../game/level/reader').
 :- use_module('../game/edit/edit').
 :- use_module('../game/play').
+:- use_module('../game/score').
 :- use_module(commands).
 :- use_module(render).
 
@@ -66,8 +67,9 @@ handle(edit(Edit), session(Original, Current), session(Original, Next)) :-
           )).
 handle(run, session(Original, Current), session(Original, Current)) :-
     play(Current, Trace, Result, TorchUsed),
+    stars(Current, Result, TorchUsed, Stars),
     show_trace(Trace),
-    show_result(Result, TorchUsed, Current).
+    show_result(Result, TorchUsed, Stars, Current).
 
 needs_level(show).
 needs_level(reset).

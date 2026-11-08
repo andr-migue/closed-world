@@ -1,5 +1,5 @@
 :- module(render, [show_help/1, show_levels/1, show_level/1, show_trace/1,
-                   show_result/3, show_error/1]).
+                   show_result/4, show_error/1]).
 
 :- use_module('../text/terms').
 :- use_module('../text/events').
@@ -23,7 +23,12 @@ show_level(Level) :-
     format("~n  ?- ~s.~n~n", [QueryText]),
     tools_text(Level.tools, ToolsText),
     edits(Level, Edits),
-    format("Torch: ~w   Tools: ~s   Edits: ~w~n", [Level.torch, ToolsText, Edits]).
+    format("Torch: ~w   Tools: ~s   Edits: ~w~n", [Level.torch, ToolsText, Edits]),
+    show_par(Level.par).
+
+show_par(none).
+show_par(par(Torch, Edits)) :-
+    format("Par: ~w torch, ~w edits~n", [Torch, Edits]).
 
 show_trace(Trace) :-
     forall(nth1(I, Trace, Event),
@@ -31,10 +36,12 @@ show_trace(Trace) :-
                format("  [~w] ~s~n", [I, Text])
            )).
 
-show_result(Result, TorchUsed, Level) :-
+show_result(Result, TorchUsed, Stars, Level) :-
     result_text(Result, Text),
+    stars_text(Stars, StarsText),
     edits(Level, Edits),
-    format("~n~s~nTorch used: ~w / ~w   Edits: ~w~n", [Text, TorchUsed, Level.torch, Edits]).
+    format("~n~s~nTorch used: ~w / ~w   Edits: ~w   ~s~n",
+           [Text, TorchUsed, Level.torch, Edits, StarsText]).
 
 show_error(Error) :-
     error_text(Error, Text),

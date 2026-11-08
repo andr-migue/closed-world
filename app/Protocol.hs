@@ -8,6 +8,7 @@ module Protocol
   , Door (..)
   , ClauseParts (..)
   , Tool (..)
+  , Par (..)
   , Target (..)
   , Edit (..)
   , levelsRequest
@@ -34,6 +35,12 @@ data Level = Level
   , levelTorch       :: Int
   , levelTools       :: [Tool]
   , levelEdits       :: Int
+  , levelPar         :: Maybe Par
+  }
+
+data Par = Par
+  { parTorch :: Int
+  , parEdits :: Int
   }
 
 data ClauseParts = ClauseParts
@@ -59,6 +66,7 @@ data Run = Run
   , runResult    :: Text
   , runMessage   :: Text
   , runTorchUsed :: Int
+  , runStars     :: Int
   , runSteps     :: [Step]
   , runRooms     :: [Room]
   , runDoors     :: [Door]
@@ -97,7 +105,11 @@ instance FromJSON Level where
   parseJSON = withObject "Level" $ \o ->
     Level <$> o .: "name" <*> o .: "concept" <*> o .: "description"
           <*> o .: "program" <*> o .: "clauses" <*> o .: "query" <*> o .: "query_goals"
-          <*> o .: "torch" <*> o .: "tools" <*> o .: "edits"
+          <*> o .: "torch" <*> o .: "tools" <*> o .: "edits" <*> o .:? "par"
+
+instance FromJSON Par where
+  parseJSON = withObject "Par" $ \o ->
+    Par <$> o .: "torch" <*> o .: "edits"
 
 instance FromJSON ClauseParts where
   parseJSON = withObject "ClauseParts" $ \o ->
@@ -123,7 +135,7 @@ instance ToJSON Target where
 
 instance FromJSON Run where
   parseJSON = withObject "Run" $ \o ->
-    Run <$> o .: "level" <*> o .: "result" <*> o .: "message" <*> o .: "torch_used"
+    Run <$> o .: "level" <*> o .: "result" <*> o .: "message" <*> o .: "torch_used" <*> o .: "stars"
         <*> o .: "steps" <*> o .: "rooms" <*> o .: "doors"
 
 instance FromJSON Step where

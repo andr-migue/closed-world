@@ -1,4 +1,4 @@
-:- module(encode, [level_summary/3, level_json/3, run_json/7]).
+:- module(encode, [level_summary/3, level_json/3, run_json/8]).
 
 :- use_module('../text/terms').
 :- use_module('../text/events').
@@ -12,15 +12,16 @@ level_json(Id, Level, Json) :-
     goal_texts(Level.query, Level.query_vars, QueryGoals),
     maplist(tool_json, Level.tools, Tools),
     edits(Level, Edits),
+    par_json(Level.par, Par),
     Json = _{id: Id, name: Level.name, concept: Level.concept,
              description: Level.description, program: Program, clauses: Clauses,
              query: Query, query_goals: QueryGoals,
-             torch: Level.torch, tools: Tools, edits: Edits}.
+             torch: Level.torch, tools: Tools, edits: Edits, par: Par}.
 
 clause_json(Clause, _{head: Head, goals: Goals}) :-
     clause_parts(Clause, Head, Goals).
 
-run_json(Id, Level, Trace, Result, TorchUsed, Dungeon, Json) :-
+run_json(Id, Level, Trace, Result, TorchUsed, Stars, Dungeon, Json) :-
     level_json(Id, Level, LevelJson),
     result_json(Result, ResultName, Answer),
     result_text(Result, Message),
@@ -28,7 +29,7 @@ run_json(Id, Level, Trace, Result, TorchUsed, Dungeon, Json) :-
     maplist(room_json, Dungeon.rooms, Rooms),
     maplist(door_json, Dungeon.doors, Doors),
     Json = _{level: LevelJson, result: ResultName, answer: Answer, message: Message,
-             torch_used: TorchUsed, steps: Steps, rooms: Rooms, doors: Doors}.
+             torch_used: TorchUsed, stars: Stars, steps: Steps, rooms: Rooms, doors: Doors}.
 
 result_json(success(Answer), success, Bindings) :- !,
     maplist(binding_json, Answer, Bindings).
@@ -68,6 +69,9 @@ door_status(ghost(Room), ghost, Room, "") :- !.
 door_status(shut(Reason), shut, null, Text) :- !,
     reason_text(Reason, Text).
 door_status(closed, closed, null, "").
+
+par_json(none, null).
+par_json(par(Torch, Edits), _{torch: Torch, edits: Edits}).
 
 tool_json(Tool, _{tool: Name, uses: Uses}) :-
     Tool =.. [Name, Uses].

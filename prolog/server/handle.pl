@@ -4,6 +4,7 @@
 :- use_module('../game/level/reader').
 :- use_module('../game/edit/edit').
 :- use_module('../game/play').
+:- use_module('../game/score').
 :- use_module('../game/dungeon/dungeon').
 :- use_module(decode).
 :- use_module(encode).
@@ -28,9 +29,10 @@ handle("run", Request, Reply) :- !,
     maplist(edit_from_json, Request.edits, Edits),
     apply_edits(Level0, Edits, Level),
     play(Level, Trace, Result, TorchUsed),
+    stars(Level, Result, TorchUsed, Stars),
     length(Trace, Steps),
     dungeon(Level, Steps, Dungeon),
-    run_json(Request.id, Level, Trace, Result, TorchUsed, Dungeon, Reply).
+    run_json(Request.id, Level, Trace, Result, TorchUsed, Stars, Dungeon, Reply).
 handle(Op, _, _) :-
     domain_error(op, Op).
 

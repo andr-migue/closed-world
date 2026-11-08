@@ -70,8 +70,12 @@ statusPanel run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
   , str " "
   , str ("Tools  " ++ toolsText (levelTools level))
   , str ("Edits  " ++ show (levelEdits level))
+  , str ("Par    " ++ parText (levelPar level))
   , str " "
   , withAttr aMessage (txtWrap message)
+  , if k == total && runResult run == T.pack "success"
+      then padTop (Pad 1) (withAttr aTreasure (str (starsText (runStars run))))
+      else emptyWidget
   ]
   where
     level = runLevel run
@@ -82,6 +86,13 @@ statusPanel run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
       | k == 0     = levelDescription level
       | k == total = stepText (runSteps run !! (k - 1)) <> T.pack "\n\n" <> runMessage run
       | otherwise  = stepText (runSteps run !! (k - 1))
+
+parText :: Maybe Par -> String
+parText Nothing    = "none"
+parText (Just par) = show (parTorch par) ++ " torch, " ++ show (parEdits par) ++ " edits"
+
+starsText :: Int -> String
+starsText n = replicate n '★' ++ replicate (3 - n) '☆'
 
 toolsText :: [Tool] -> String
 toolsText [] = "none"

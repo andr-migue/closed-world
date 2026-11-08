@@ -1,4 +1,4 @@
-:- module(events, [event_text/2, reason_text/2, result_text/2]).
+:- module(events, [event_text/2, reason_text/2, result_text/2, stars_text/2]).
 
 :- use_module(terms).
 
@@ -40,6 +40,14 @@ result_text(success(Answer), Text) :-
 result_text(trap, "The adventurer fell into a trap.").
 result_text(failure, "No way out: the adventurer gives up.").
 result_text(torch_out, "The torch went out.").
+
+stars_text(Stars, Text) :-
+    Empty is 3 - Stars,
+    length(Full, Stars), maplist(=("★"), Full),
+    length(Hollow, Empty), maplist(=("☆"), Hollow),
+    append(Full, Hollow, All),
+    atomic_list_concat(All, Atom),
+    atom_string(Atom, Text).
 
 binding_text(Name=Value, Text) :-
     term_text(Value, V),
