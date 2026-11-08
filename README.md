@@ -2,8 +2,6 @@
 
 ## Closed World
 
-**A puzzle game where every level is a Prolog program.**
-
 ![SWI-Prolog](https://img.shields.io/badge/SWI--Prolog-10.0-E61B23?style=flat-square)
 ![Haskell](https://img.shields.io/badge/Haskell-GHC_9.6-5E5086?style=flat-square&logo=haskell&logoColor=white)
 ![Status](https://img.shields.io/badge/status-in_development-F5A623?style=flat-square)
