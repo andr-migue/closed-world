@@ -1,7 +1,7 @@
 :- module(edit, [apply_edit/3, apply_edits/3]).
 
 :- use_module(positions).
-:- use_module(edit_target).
+:- use_module(target).
 :- use_module(tool_budget).
 
 apply_edits(Level, [], Level).

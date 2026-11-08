@@ -1,6 +1,6 @@
-:- module(level_reader, [load_level/2]).
+:- module(reader, [load_level/2]).
 
-:- use_module('../engine/engine', [conj_list/2]).
+:- use_module('../../engine/engine', [conj_list/2]).
 
 load_level(File, Level) :-
     read_terms(File, Terms),

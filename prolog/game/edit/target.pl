@@ -1,4 +1,4 @@
-:- module(edit_target, [goals_at/3, set_goals_at/4]).
+:- module(target, [goals_at/3, set_goals_at/4]).
 
 :- use_module(positions).
 
