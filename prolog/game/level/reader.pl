@@ -32,7 +32,7 @@ level_info(Directives, Info) :-
     maplist(directive_fields, Directives, FieldLists),
     append(FieldLists, Fields),
     dict_pairs(Given, level, Fields),
-    Defaults = level{concept: "", description: "", tools: [], par: none},
+    Defaults = level{concept: "", description: "", hint: "", tools: [], par: none},
     Info = Defaults.put(Given),
     forall(member(Key, [name, query, torch]), required(Key, Info)).
 
@@ -40,6 +40,7 @@ directive_fields(ensure_loaded(_)-_,  []) :- !.
 directive_fields(name(Name)-_,        [name-Name]) :- !.
 directive_fields(concept(Text)-_,     [concept-Text]) :- !.
 directive_fields(description(Text)-_, [description-Text]) :- !.
+directive_fields(hint(Text)-_,        [hint-Text]) :- !.
 directive_fields(query(Query)-Names,  [query-Goals, query_vars-Names]) :- !,
     conj_list(Query, Goals).
 directive_fields(torch(Steps)-_,      [torch-Steps]) :- !,

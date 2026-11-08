@@ -2,6 +2,7 @@
 :- name("The impatient ghost").
 :- concept("Negation as failure with an unbound variable").
 :- description("The ghost looks for a room without a monster to hide the treasure, but gives up before starting.").
+:- hint("not(G) succeeds only when G has no solution at all. What does monster(X) find while X is still unknown?").
 :- query((free(R), treasure(R))).
 :- torch(30).
 :- tools([move_goals(1)]).

@@ -5,6 +5,7 @@
 name(X)        :- assertz(level_data(name(X))).
 concept(X)     :- assertz(level_data(concept(X))).
 description(X) :- assertz(level_data(description(X))).
+hint(X)        :- assertz(level_data(hint(X))).
 query(X)       :- assertz(level_data(query(X))).
 torch(X)       :- assertz(level_data(torch(X))).
 tools(X)       :- assertz(level_data(tools(X))).
