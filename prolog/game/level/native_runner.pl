@@ -8,6 +8,7 @@ description(X) :- assertz(level_data(description(X))).
 query(X)       :- assertz(level_data(query(X))).
 torch(X)       :- assertz(level_data(torch(X))).
 tools(X)       :- assertz(level_data(tools(X))).
+par(T, E)      :- assertz(level_data(par(T, E))).
 
 trap :- throw(trap).
 

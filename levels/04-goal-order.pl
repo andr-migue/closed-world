@@ -5,6 +5,7 @@
 :- query((key(K), door(D), opens(K, D), leads_to_treasure(D))).
 :- torch(25).
 :- tools([move_goals(3)]).
+:- par(16, 2).
 
 key(bronze).
 key(copper).

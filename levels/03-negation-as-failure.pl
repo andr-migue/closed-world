@@ -5,6 +5,7 @@
 :- query((free(R), treasure(R))).
 :- torch(30).
 :- tools([move_goals(1)]).
+:- par(10, 1).
 
 free(X) :- not(monster(X)), room(X).
 

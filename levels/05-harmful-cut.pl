@@ -5,6 +5,7 @@
 :- query(path(entrance, treasure)).
 :- torch(30).
 :- tools([remove_cut(1)]).
+:- par(21, 1).
 
 path(X, X).
 path(X, Z) :- next(X, Y), path(Y, Z).

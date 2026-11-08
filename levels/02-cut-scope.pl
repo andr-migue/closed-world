@@ -5,6 +5,7 @@
 :- query((wing(W), take(M), use(M, W))).
 :- torch(30).
 :- tools([add_cut(1)]).
+:- par(9, 1).
 
 wing(east).
 wing(west).

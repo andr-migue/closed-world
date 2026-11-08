@@ -5,6 +5,7 @@
 :- query(room(treasure)).
 :- torch(20).
 :- tools([move_clauses(1)]).
+:- par(4, 1).
 
 room(X) :- room(Y), door(Y, X).
 room(entrance).
