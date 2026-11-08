@@ -1,41 +1,38 @@
 module Main (main) where
 
 import Brick
-import Brick.Widgets.Border (hBorder, vBorder, borderWithLabel)
+import Brick.BChan (newBChan, writeBChan)
+import Brick.Widgets.Border (borderWithLabel)
 import Brick.Widgets.Border.Style (unicode)
-import Control.Monad (void)
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Monad (forever, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, put, modify)
-import Data.Char (digitToInt, isDigit)
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
 import Editor
 import Protocol
 import Server
-import UI.Dungeon
-import UI.Panels
+import State
+import UI.Help
+import UI.Menu
+import UI.Play
 import UI.Theme
-
-data Game = Game
-  { server  :: Server
-  , levels  :: [LevelSummary]
-  , levelId :: Int
-  , edits   :: [Edit]
-  , current :: Maybe Run
-  , stepIx  :: Int
-  , mode    :: Mode
-  , hint    :: Bool
-  , notice  :: String
-  }
 
 main :: IO ()
 main = do
   srv <- start
-  summaries <- either (const []) id <$> call srv levelsRequest
-  game <- load 1 (Game srv summaries 1 [] Nothing 0 Replay False "")
-  void (defaultMain app game)
+  reply <- call srv levelsRequest
+  let (summaries, problem) = case reply of
+        Right (LevelList l) -> (l, "")
+        Left e              -> ([], "Could not start the Prolog server: " ++ e)
+  ticks <- newBChan 4
+  void (forkIO (forever (writeBChan ticks Tick >> threadDelay 450000)))
+  let game = Game srv summaries (Menu 0) 1 [] Nothing 0 Replay False False M.empty problem
+  void (customMainWithDefaultVty (Just ticks) app game)
 
-app :: App Game e Name
+app :: App Game Tick Name
 app = App
   { appDraw         = draw
   , appChooseCursor = neverShowCursor
@@ -44,62 +41,104 @@ app = App
   , appAttrMap      = const theme
   }
 
-load :: Int -> Game -> IO Game
-load n game = do
-  reply <- call (server game) (runRequest n [])
-  pure $ case reply of
-    Right run -> game { levelId = n, edits = [], current = Just run, stepIx = 0, mode = Replay, hint = False, notice = "" }
-    Left err  -> game { notice = err }
-
-rerun :: [Edit] -> Game -> IO Game
-rerun newEdits game = do
-  reply <- call (server game) (runRequest (levelId game) newEdits)
-  pure $ case reply of
-    Right run -> game { edits = newEdits, current = Just run, stepIx = 0, notice = "" }
-    Left err  -> game { notice = err }
-
 draw :: Game -> [Widget Name]
-draw game = [withBorderStyle unicode (borderWithLabel title body)]
+draw game = case screen game of
+  Menu i     -> [frame "" (menuScreen game i <=> noticeLine game)]
+  Levels i   -> [frame "" (levelsScreen game i <=> keys [("↑/↓", "choose"), ("enter", "play"), ("esc", "menu")])]
+  Help p _   -> [frame "" (helpScreen p <=> keys [("←/→", "page"), ("esc", "back")])]
+  Playing    -> case current game of
+    Nothing  -> [frame "" (noticeLine game)]
+    Just run ->
+      [resultDialog game run | finished game, Replay <- [mode game]]
+      ++ [frame (levelTitle game run) (playScreen game run)]
   where
-    title = withAttr aTitle (txt (T.pack " CLOSED WORLD " <> maybe T.empty name (current game) <> T.pack " "))
-    name run = T.pack "· " <> levelName (runLevel run) <> T.pack " "
-    body = case current game of
-      Nothing  -> padAll 1 (str (notice game))
-      Just run -> vBox
-        [ hBox [ padAll 1 (dungeon run (stepIx game))
-               , vBorder
-               , hLimit 52 (vBox [ programPanel (mode game) run (stepIx game)
-                                 , statusPanel (hint game) run (stepIx game) ])
-               ]
-        , hBorder
-        , if null (notice game)
-            then helpLine (mode game)
-            else padLeftRight 1 (withAttr aTrap (str (notice game)))
-        ]
+    frame title body = withBorderStyle unicode (borderWithLabel (withAttr aTitle (str (" CLOSED WORLD" ++ title ++ " "))) body)
 
-handle :: BrickEvent Name e -> EventM Name Game ()
-handle (VtyEvent (V.EvKey (V.KChar 'h') [])) = modify $ \g -> g { hint = not (hint g) }
-handle (VtyEvent (V.EvKey key mods)) = do
+levelTitle :: Game -> Run -> String
+levelTitle game run =
+  " · " ++ show (levelId game) ++ "/" ++ show (length (levels game)) ++ " · " ++ T.unpack (levelName (runLevel run))
+
+noticeLine :: Game -> Widget Name
+noticeLine game
+  | null (notice game) = keys [("↑/↓", "choose"), ("enter", "select")]
+  | otherwise          = padLeftRight 1 (withAttr aTrap (str (notice game)))
+
+keys :: [(String, String)] -> Widget Name
+keys pairs = padLeftRight 1 $ hBox
+  [withAttr aKey (str (" " ++ k ++ " ")) <+> str (" " ++ label ++ "   ") | (k, label) <- pairs]
+
+handle :: BrickEvent Name Tick -> EventM Name Game ()
+handle (AppEvent Tick) = tick
+handle (VtyEvent (V.EvKey key _)) = do
   game <- get
-  case (mode game, current game) of
-    (Editing cursor pick, Just run) -> editKey (runLevel run) cursor pick key mods
-    _                               -> replayKey key
+  case screen game of
+    Menu i      -> menuKey i key
+    Levels i    -> levelsKey i key
+    Help p back -> helpKey p back key
+    Playing     -> case (mode game, current game) of
+      (Editing cursor pick, Just run) -> editKey (runLevel run) cursor pick key
+      _                               -> replayKey key
 handle _ = pure ()
 
-replayKey :: V.Key -> EventM Name Game ()
-replayKey key = case key of
+menuKey :: Int -> V.Key -> EventM Name Game ()
+menuKey i key = case key of
+  V.KUp    -> goTo (Menu (max 0 (i - 1)))
+  V.KDown  -> goTo (Menu (min (length menuItems - 1) (i + 1)))
+  V.KEnter -> case menuItems !! i of
+    PlayItem -> do
+      game <- get
+      goTo (Levels (firstUnsolved game))
+    HelpItem -> goTo (Help 0 (Menu i))
+    QuitItem -> halt
   V.KChar 'q' -> halt
   V.KEsc      -> halt
-  V.KRight    -> moveTo (+ 1)
-  V.KLeft     -> moveTo (subtract 1)
-  V.KHome     -> moveTo (const 0)
-  V.KEnd      -> moveTo (const maxBound)
-  V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, notice = "" }
-  V.KChar c | isDigit c, c /= '0' -> io (load (digitToInt c))
   _ -> pure ()
 
-editKey :: Level -> Cursor -> Maybe Pick -> V.Key -> [V.Modifier] -> EventM Name Game ()
-editKey level cursor pick key _ = case key of
+firstUnsolved :: Game -> Int
+firstUnsolved game =
+  case [i | (i, l) <- zip [0 ..] (levels game), M.notMember (summaryId l) (best game)] of
+    (i : _) -> i
+    []      -> 0
+
+levelsKey :: Int -> V.Key -> EventM Name Game ()
+levelsKey i key = do
+  game <- get
+  let n = length (levels game)
+  case key of
+    V.KUp    -> goTo (Levels (max 0 (i - 1)))
+    V.KDown  -> goTo (Levels (min (n - 1) (i + 1)))
+    V.KEnter -> when (n > 0) (io (load (summaryId (levels game !! i))))
+    V.KEsc   -> goTo (Menu 0)
+    _        -> pure ()
+
+helpKey :: Int -> Screen -> V.Key -> EventM Name Game ()
+helpKey p back key = case key of
+  V.KRight -> goTo (Help (min (length helpPages - 1) (p + 1)) back)
+  V.KLeft  -> goTo (Help (max 0 (p - 1)) back)
+  V.KEsc   -> goTo back
+  V.KChar '?' -> goTo back
+  _        -> pure ()
+
+replayKey :: V.Key -> EventM Name Game ()
+replayKey key = do
+  game <- get
+  case key of
+    V.KChar ' '
+      | finished game -> modify $ \g -> g { stepIx = 0, playing = True }
+      | otherwise     -> modify $ \g -> g { playing = not (playing g) }
+    V.KRight    -> stop >> moveTo (+ 1)
+    V.KLeft     -> stop >> moveTo (subtract 1)
+    V.KHome     -> stop >> moveTo (const 0)
+    V.KEnd      -> stop >> moveTo (const maxBound)
+    V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, playing = False, notice = "" }
+    V.KChar 'h' -> toggleHint
+    V.KChar '?' -> stop >> goTo (Help 0 Playing)
+    V.KChar 'n' | finished game, succeeded game, hasNextLevel game -> io (load (levelId game + 1))
+    V.KEsc      -> stop >> goTo (Levels (levelId game - 1))
+    _           -> pure ()
+
+editKey :: Level -> Cursor -> Maybe Pick -> V.Key -> EventM Name Game ()
+editKey level cursor pick key = case key of
   V.KUp       -> moveCursorBy (-1) 0
   V.KDown     -> moveCursorBy 1 0
   V.KLeft     -> moveCursorBy 0 (-1)
@@ -114,11 +153,11 @@ editKey level cursor pick key _ = case key of
     game <- get
     if null (edits game) then say "Nothing to undo." else io (rerun (init (edits game)))
   V.KChar 'R' -> io (rerun [])
-  V.KEnter    -> modify $ \g -> g { mode = Replay, stepIx = 0, notice = "" }
+  V.KChar 'h' -> toggleHint
+  V.KEnter    -> modify $ \g -> g { mode = Replay, stepIx = 0, playing = True, notice = "" }
   V.KEsc      -> case pick of
     Just _  -> setMode (Editing cursor Nothing)
     Nothing -> setMode Replay
-  V.KChar 'q' -> halt
   _ -> pure ()
   where
     moveCursorBy dr dc = setMode (Editing (moveCursor level dr dc cursor) pick)
@@ -127,10 +166,55 @@ editKey level cursor pick key _ = case key of
       game' <- liftIO (rerun (edits game ++ [edit]) game)
       put game' { mode = Editing (fitCursor game' cursor) Nothing }
 
+load :: Int -> Game -> IO Game
+load n game = do
+  reply <- call (server game) (runRequest n [])
+  pure $ case reply of
+    Right run -> game { screen = Playing, levelId = n, edits = [], current = Just run, stepIx = 0
+                      , mode = Replay, hint = False, playing = False, notice = "" }
+    Left err  -> game { notice = err }
+
+rerun :: [Edit] -> Game -> IO Game
+rerun newEdits game = do
+  reply <- call (server game) (runRequest (levelId game) newEdits)
+  pure $ case reply of
+    Right run -> game { edits = newEdits, current = Just run, stepIx = 0, notice = "" }
+    Left err  -> game { notice = err }
+
+tick :: EventM Name Game ()
+tick = do
+  game <- get
+  case (screen game, mode game) of
+    (Playing, Replay) | playing game ->
+      if stepIx game < totalSteps game
+        then moveTo (+ 1)
+        else stop
+    _ -> pure ()
+
+moveTo :: (Int -> Int) -> EventM Name Game ()
+moveTo f = modify $ \game ->
+  let k = max 0 (min (totalSteps game) (f (stepIx game)))
+  in record game { stepIx = k, playing = playing game && k < totalSteps game }
+
+record :: Game -> Game
+record game
+  | finished game && succeeded game, Just run <- current game =
+      game { best = M.insertWith max (levelId game) (runStars run) (best game) }
+  | otherwise = game
+
 fitCursor :: Game -> Cursor -> Cursor
 fitCursor game cursor = case current game of
   Just run -> moveCursor (runLevel run) 0 0 cursor
   Nothing  -> cursor
+
+goTo :: Screen -> EventM Name Game ()
+goTo s = modify $ \g -> g { screen = s, notice = "" }
+
+stop :: EventM Name Game ()
+stop = modify $ \g -> g { playing = False }
+
+toggleHint :: EventM Name Game ()
+toggleHint = modify $ \g -> g { hint = not (hint g) }
 
 setMode :: Mode -> EventM Name Game ()
 setMode m = modify $ \g -> g { mode = m, notice = "" }
@@ -140,8 +224,3 @@ say message = modify $ \g -> g { notice = message }
 
 io :: (Game -> IO Game) -> EventM Name Game ()
 io f = get >>= liftIO . f >>= put
-
-moveTo :: (Int -> Int) -> EventM Name Game ()
-moveTo f = modify $ \game -> case current game of
-  Nothing  -> game
-  Just run -> game { stepIx = max 0 (min (length (runSteps run)) (f (stepIx game))) }

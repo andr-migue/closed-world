@@ -1,4 +1,4 @@
-module UI.Panels (programPanel, statusPanel, helpLine) where
+module UI.Panels (programPanel, statusPanel, starsText, parText) where
 
 import Brick
 import Brick.Widgets.Border (borderWithLabel)
@@ -75,9 +75,6 @@ statusPanel hint run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBo
   , if hint
       then withAttr aHint (txtWrap (hintText (levelHint level)))
       else withAttr aMessage (txtWrap message)
-  , if k == total && runResult run == T.pack "success"
-      then padTop (Pad 1) (withAttr aTreasure (str (starsText (runStars run))))
-      else emptyWidget
   ]
   where
     level = runLevel run
@@ -108,14 +105,3 @@ toolsText tools = unwords [T.unpack (toolName t) ++ " ×" ++ show (toolUses t) |
 torchUsed :: Run -> Int -> Int
 torchUsed run k = length [s | s <- take k (runSteps run), stepEvent s `notElem` free]
   where free = [T.pack "success", T.pack "trap"]
-
-helpLine :: Mode -> Widget Name
-helpLine mode = padLeftRight 1 $ hBox $ case mode of
-  Replay ->
-    [ key "←/→", str " step   ", key "Home/End", str " start/end   "
-    , key "e", str " edit   ", key "h", str " hint   ", key "1-9", str " level   ", key "q", str " quit" ]
-  Editing _ _ ->
-    [ key "arrows", str " select   ", key "space", str " pick/drop   "
-    , key "c", str " cut   ", key "x", str " uncut   ", key "u", str " undo   "
-    , key "R", str " reset   ", key "h", str " hint   ", key "enter", str " run   ", key "esc", str " back" ]
-  where key k = withAttr aKey (str (" " ++ k ++ " "))
