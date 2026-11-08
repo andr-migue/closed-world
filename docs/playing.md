@@ -34,6 +34,7 @@ Start it with `./closed-world`. It replays each run step by step on the dungeon 
 | `Home` `End` | First / last step |
 | `1`–`9` | Load a level |
 | `e` | Edit the program |
+| `h` | Show or hide the level's hint |
 | `q` | Quit |
 
 | Key | Edit mode |
@@ -43,6 +44,7 @@ Start it with `./closed-world`. It replays each run step by step on the dungeon 
 | `c` | Insert a cut at the selection |
 | `x` | Remove the selected cut |
 | `u` / `R` | Undo the last edit / undo all edits |
+| `h` | Show or hide the level's hint |
 | `Enter` | Release the adventurer with the edited program |
 | `Esc` | Cancel a pick, or go back to replay |
 
@@ -57,6 +59,7 @@ Start it with `./closed-world console`. It only needs SWI-Prolog.
 | `levels` | List the levels |
 | `level N` | Load level `N` |
 | `show` | Show the current program |
+| `hint` | Show a hint for the level |
 | `move C1 C2` | Move clause `C1` to position `C2` |
 | `goal T F To` | Move goal `F` to position `To` in `T` |
 | `cut T P` | Insert a cut at position `P` of `T` |
@@ -108,6 +111,7 @@ A level is a plain Prolog file in [`levels/`](../levels). Its metadata goes in d
 :- name("The two wings").
 :- concept("Scope of the cut").
 :- description("Gold opens the west wing, but iron is cursed. You have a single cut.").
+:- hint("A cut commits to the clause it is in and to the choices made before it there. Where can it keep the adventurer away from iron without losing the west wing?").
 :- query((wing(W), take(M), use(M, W))).
 :- torch(30).
 :- tools([add_cut(1)]).
@@ -125,6 +129,7 @@ use(gold, west).
 | `name/1` | Title shown to the player |
 | `concept/1` | What the level teaches |
 | `description/1` | The player's brief |
+| `hint/1` | A hint that explains the concept without giving the solution (optional) |
 | `query/1` | The fixed query the adventurer runs |
 | `torch/1` | Steps available |
 | `tools/1` | Allowed edits: `move_clauses(N)`, `move_goals(N)`, `add_cut(N)`, `remove_cut(N)` |
