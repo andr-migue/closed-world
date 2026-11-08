@@ -1,5 +1,5 @@
 module UI.Sprites
-  ( adventurer, ghost, chest, skull, rubble, entrance, portal
+  ( adventurer, adventurerWalk, ghost, chest, skull, rubble, entrance, portal
   , flame1, flame2, torchTall, torchOut, star, starEmpty
   , levelIcon, starsImage
   ) where
@@ -44,6 +44,18 @@ ghost = sprite
   , ".cvvvvc."
   , ".c.cc.c."
   , "........"
+  ]
+
+adventurerWalk :: Sprite
+adventurerWalk = sprite
+  [ "...PP..F"
+  , "..PPPP.f"
+  , "..PhhP.B"
+  , "...hh..B"
+  , "..pppppB"
+  , ".pPpppP."
+  , ".pp...pp"
+  , ".kk...kk"
   ]
 chest = sprite
   [ "........"

@@ -12,14 +12,14 @@ import UI.Theme (Name (..))
 rowHeight :: Int
 rowHeight = roomHeight + 4
 
-dungeon :: Bool -> Run -> Int -> Widget Name
-dungeon follow run k = viewport DungeonView Both (focus (raw (V.vertCat (concatMap level [0 .. mvLastRow mv]))))
+dungeon :: Bool -> Bool -> Run -> Int -> Widget Name
+dungeon follow stride run k = viewport DungeonView Both (focus (raw (V.vertCat (concatMap level [0 .. mvLastRow mv]))))
   where
     mv = mapView run k
     level d = [rooms d, doorsRow mv d] ++ if d < mvLastRow mv then corridorRows mv d else []
     rooms d = V.horizCat [cell d c | c <- [0 .. mvLastCol mv]]
     cell d c = case find (\r -> rvRow r == d && rvCol r == c) (mvRooms mv) of
-      Just r  -> V.horizCat [roomImage r, V.charFill V.defAttr ' ' (cellWidth - roomWidth) roomHeight]
+      Just r  -> V.horizCat [roomImage stride r, V.charFill V.defAttr ' ' (cellWidth - roomWidth) roomHeight]
       Nothing -> V.charFill V.defAttr ' ' cellWidth roomHeight
     focus w = case find ((== Current) . rvState) (mvRooms mv) of
       Just r | follow ->

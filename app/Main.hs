@@ -4,6 +4,7 @@ import Brick
 import Brick.BChan (newBChan, writeBChan)
 import Brick.Widgets.Border (borderWithLabel)
 import Brick.Widgets.Border.Style (unicode)
+import Brick.Widgets.Center (center, hCenter)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Monad (forever, void, when)
 import Control.Monad.IO.Class (liftIO)
@@ -29,7 +30,7 @@ main = do
         Left e              -> ([], "Could not start the Prolog server: " ++ e)
   ticks <- newBChan 4
   void (forkIO (forever (writeBChan ticks Tick >> threadDelay 450000)))
-  let game = Game srv summaries (Menu 0) 1 [] Nothing 0 Replay False False True 0 M.empty problem
+  let game = Game srv summaries (Menu 0) 1 [] Nothing 0 Replay False False True 0 0 M.empty problem
   void (customMainWithDefaultVty (Just ticks) app game)
 
 app :: App Game Tick Name
@@ -42,17 +43,38 @@ app = App
   }
 
 draw :: Game -> [Widget Name]
-draw game = case screen game of
-  Menu i     -> [frame "" (menuScreen game i <=> noticeLine game)]
-  Levels i   -> [frame "" (levelsScreen game i <=> keys [("↑/↓", "choose"), ("enter", "play"), ("esc", "menu")])]
-  Help p _   -> [frame "" (helpScreen p <=> keys [("←/→", "page"), ("esc", "back")])]
+draw game = map (whenFits tooSmall) $ case screen game of
+  Menu i     -> [window "" (menuScreen game i <=> noticeLine game)]
+  Levels i   -> [window "" (levelsScreen game i <=> keys [("↑/↓", "choose"), ("enter", "play"), ("esc", "menu")])]
+  Help p _   -> [window "" (helpScreen p <=> keys [("←/→", "page"), ("esc", "back")])]
   Playing    -> case current game of
-    Nothing  -> [frame "" (noticeLine game)]
+    Nothing  -> [window "" (noticeLine game)]
     Just run ->
       [resultDialog game run | finished game, Replay <- [mode game]]
-      ++ [frame (levelTitle game run) (playScreen game run)]
+      ++ [window (levelTitle game run) (playScreen game run)]
   where
-    frame title body = withBorderStyle unicode (borderWithLabel (withAttr aTitle (str (" CLOSED WORLD" ++ title ++ " "))) body)
+    window title body = withBorderStyle unicode (borderWithLabel (withAttr aTitle (str (" CLOSED WORLD" ++ title ++ " "))) body)
+
+minWidth, minHeight :: Int
+minWidth  = 120
+minHeight = 34
+
+whenFits :: Widget Name -> Widget Name -> Widget Name
+whenFits fallback w = Widget Greedy Greedy $ do
+  ctx <- getContext
+  if availWidth ctx < minWidth || availHeight ctx < minHeight
+    then render fallback
+    else render w
+
+tooSmall :: Widget Name
+tooSmall = Widget Greedy Greedy $ do
+  ctx <- getContext
+  render $ center $ vBox
+    [ hCenter (withAttr aTitle (str "The terminal is too small"))
+    , str " "
+    , hCenter (withAttr aLine (str ("Closed World needs at least " ++ show minWidth ++ " × " ++ show minHeight ++ ".")))
+    , hCenter (withAttr aDim (str ("Now it is " ++ show (availWidth ctx) ++ " × " ++ show (availHeight ctx) ++ ".")))
+    ]
 
 levelTitle :: Game -> Run -> String
 levelTitle game run =
@@ -199,7 +221,9 @@ tick = do
 moveTo :: (Int -> Int) -> EventM Name Game ()
 moveTo f = modify $ \game ->
   let k = max 0 (min (totalSteps game) (f (stepIx game)))
-  in record game { stepIx = k, playing = playing game && k < totalSteps game, follow = True }
+      arrived = k == totalSteps game && stepIx game /= k
+  in record game { stepIx = k, playing = playing game && k < totalSteps game, follow = True
+                 , endFrame = if arrived then frame game else endFrame game }
 
 record :: Game -> Game
 record game

@@ -30,26 +30,27 @@ look r = case (rvState r, rvGhost r) of
     let w = if g then wallGhostShadow else wallShadow
     in Look (dim w) (dim w) (dim floorStone) mist dim
 
-roomImage :: RoomView -> V.Image
-roomImage r = V.vertCat ([top] ++ map framed (art ++ [label]) ++ [bottom])
+roomImage :: Bool -> RoomView -> V.Image
+roomImage stride r = V.vertCat ([top] ++ map framed (art ++ [label]) ++ [bottom])
   where
     l       = look r
     top     = V.charFill (fgAttr (wall l)) '▄' roomWidth 1
     bottom  = V.charFill (fgAttr (wall l)) '▀' roomWidth 1
     framed body = V.horizCat [V.char (fgAttr (shadow l)) '█', body, V.char (fgAttr (wall l)) '█']
-    art     = centered l (sprites r)
+    art     = centered l (sprites stride r)
     label   = V.text' (V.defAttr `V.withForeColor` color (ink l) `V.withBackColor` color (ground l))
                       (T.center inner ' ' (fit (rvLabel r)))
     fit s
       | T.length s <= inner - 2 = s
       | otherwise               = T.take (inner - 3) s <> T.pack "…"
 
-sprites :: RoomView -> [Sprite]
-sprites r = filter (not . null) [kindSprite (rvKind r), actor]
+sprites :: Bool -> RoomView -> [Sprite]
+sprites stride r = filter (not . null) [kindSprite (rvKind r), actor]
   where
     actor
       | rvState r /= Current = []
       | rvGhost r            = ghost
+      | stride               = adventurerWalk
       | otherwise            = adventurer
 
 kindSprite :: T.Text -> Sprite

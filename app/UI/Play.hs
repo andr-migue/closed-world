@@ -17,7 +17,7 @@ import UI.Theme
 
 playScreen :: Game -> Run -> Widget Name
 playScreen game run = vBox
-  [ hBox [ padAll 1 (dungeon (follow game) run k)
+  [ hBox [ padAll 1 (dungeon (follow game) (playing game && odd (frame game)) run k)
          , vBorder
          , hLimit 52 (vBox [programPanel (mode game) run k, statusPanel (frame game) (hint game) run k])
          ]
@@ -34,7 +34,7 @@ resultDialog game run = centerLayer $ hLimit 84 $ borderWithLabel (withAttr aTit
   , str " "
   , hCenter (withAttr aMessage (txt (subtitle (runMessage run))))
   ]
-  ++ [ padTop (Pad 1) (hCenter (raw (starsImage (runStars run)))) | won ]
+  ++ [ padTop (Pad 1) (hCenter (raw (starsImage (min (runStars run) (frame game - endFrame game))))) | won ]
   ++ [ str " "
      , hCenter (hBox [ withAttr aLabel (str "Torch used "), withAttr aValue (str (show (runTorchUsed run)))
                      , withAttr aDim (str (" / " ++ show (levelTorch level) ++ "     "))

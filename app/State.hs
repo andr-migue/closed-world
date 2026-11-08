@@ -32,6 +32,7 @@ data Game = Game
   , playing :: Bool
   , follow  :: Bool
   , frame   :: Int
+  , endFrame :: Int
   , best    :: M.Map Int Int
   , notice  :: String
   }
