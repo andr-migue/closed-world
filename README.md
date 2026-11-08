@@ -14,7 +14,7 @@ Every level is logically correct (the answer exists) but Prolog's search order k
 
 ### Getting started
 
-**Requirements:** [SWI-Prolog](https://www.swi-prolog.org/) 9 or later, and GHC 9.6 with the `brick` and `aeson` packages for the terminal interface.
+**Requirements:** [SWI-Prolog](https://www.swi-prolog.org/) 9 or later, and GHC 9.6 with the `brick` and `aeson` packages for the terminal interface, which needs a terminal of at least 120 × 34 with 24-bit color.
 
 ```bash
 git clone https://github.com/andr-migue/closed-world.git
