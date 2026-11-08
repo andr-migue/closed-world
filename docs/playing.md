@@ -33,6 +33,7 @@ Start it with `./closed-world`. It opens a menu with **Play**, **How to play** a
 | `Space` | Release the adventurer, pause or resume |
 | `←` `→` | Previous / next step |
 | `Home` `End` | First / last step |
+| `W` `A` `S` `D` | Pan the map (stepping follows the adventurer again) |
 | `e` | Edit the program |
 | `h` | Show or hide the level's hint |
 | `?` | How to play |

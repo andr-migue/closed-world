@@ -110,7 +110,13 @@ closed-world/
 │   ├── Editor.hs           edit cursor and edits, as pure functions
 │   ├── Protocol.hs         JSON types
 │   ├── Server.hs           start swipl and send requests
-│   └── UI/                 menu, levels, help, play screen, dungeon, panels and theme
+│   └── UI/                 screens, panels, theme and the dungeon map
+│       ├── Palette.hs      fantasy palette shared by sprites and text
+│       ├── Pixel.hs        half-block sprite rendering
+│       ├── Sprites.hs      sprites as data
+│       ├── PixelFont.hs    pixel font for titles and banners
+│       ├── Syntax.hs       Prolog syntax highlighting
+│       └── Dungeon/        map model (View), rooms (Room) and corridors (Corridor)
 └── docs/
 ```
 
