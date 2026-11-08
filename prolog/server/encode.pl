@@ -7,12 +7,18 @@ level_summary(Id, Level, _{id: Id, name: Level.name, concept: Level.concept}).
 
 level_json(Id, Level, Json) :-
     maplist(clause_text, Level.program, Program),
+    maplist(clause_json, Level.program, Clauses),
     goals_text(Level.query, Level.query_vars, Query),
+    goal_texts(Level.query, Level.query_vars, QueryGoals),
     maplist(tool_json, Level.tools, Tools),
     edits(Level, Edits),
     Json = _{id: Id, name: Level.name, concept: Level.concept,
-             description: Level.description, program: Program, query: Query,
+             description: Level.description, program: Program, clauses: Clauses,
+             query: Query, query_goals: QueryGoals,
              torch: Level.torch, tools: Tools, edits: Edits}.
+
+clause_json(Clause, _{head: Head, goals: Goals}) :-
+    clause_parts(Clause, Head, Goals).
 
 run_json(Id, Level, Trace, Result, TorchUsed, Dungeon, Json) :-
     level_json(Id, Level, LevelJson),
