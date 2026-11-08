@@ -97,7 +97,8 @@ closed-world/
 │   │   │   └── native_runner.pl  run a level with native Prolog
 │   │   ├── edit/           player edits and tool budget
 │   │   ├── dungeon/        turn a run into rooms, doors and a path
-│   │   └── play.pl         run a level
+│   │   ├── play.pl         run a level
+│   │   └── score.pl        stars from torch and edits against the par
 │   ├── text/               terms, trace events and errors as text
 │   ├── console/            playable text interface
 │   └── server/             JSON over stdio for the Haskell interface

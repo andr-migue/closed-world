@@ -38,7 +38,7 @@ To play in plain text with Prolog only, run `./closed-world console`: type `leve
 - [x] Level format and five levels
 - [x] Player edits with a limited tool budget
 - [x] Playable console
-- [ ] Star rating
+- [x] Star rating
 - [ ] Levels 6 to 8
 - [x] JSON server and dungeon layout
 - [x] Terminal interface prototype in Haskell with brick

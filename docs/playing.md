@@ -19,6 +19,8 @@ The dungeon is the SLD tree of the level's query.
 
 The adventurer wins when the query succeeds, and loses when every path fails, when they step on `trap`, or when the torch runs out.
 
+Reaching the treasure earns one star, plus one for not using more torch than the level's par and one for not using more edits. Matching the best known solution earns all three.
+
 > [!NOTE]
 > A torch that runs out does not prove that a program never terminates — only that it took more steps than the level allows.
 
@@ -85,8 +87,8 @@ Start it with `./closed-world console`. It only needs SWI-Prolog.
 | :---: | :--- | :--- |
 | 1 | `move 2 1` | The base case is tried before the left-recursive rule |
 | 2 | `cut 3 1` | The cut discards `iron` but keeps the `west` wing |
-| 3 | `goal 1 2 1` | `room(X)` binds `X` before `not` checks it |
-| 4 | `goal q 4 1`, `goal q 4 2`, `goal q 4 3` | Filtering first fits within the torch |
+| 3 | `goal q 1 2` | `treasure(R)` binds `R` before `not` checks it (the cheapest; `goal 1 2 1` also works) |
+| 4 | `goal q 1 3`, `goal q 4 1` | Filtering first fits within the torch |
 | 5 | `uncut 3 2` | Without the cut, the adventurer can try the gallery |
 
 </details>
@@ -103,6 +105,7 @@ A level is a plain Prolog file in [`levels/`](../levels). Its metadata goes in d
 :- query((wing(W), take(M), use(M, W))).
 :- torch(30).
 :- tools([add_cut(1)]).
+:- par(9, 1).
 
 wing(east).
 wing(west).
@@ -119,6 +122,7 @@ use(gold, west).
 | `query/1` | The fixed query the adventurer runs |
 | `torch/1` | Steps available |
 | `tools/1` | Allowed edits: `move_clauses(N)`, `move_goals(N)`, `add_cut(N)`, `remove_cut(N)` |
+| `par/2` | Torch and edits of the best known solution, used for the stars |
 
 `name/1`, `query/1` and `torch/1` are required. `trap/0` is a game predicate that kills the adventurer on the spot.
 
