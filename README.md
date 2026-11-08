@@ -1,11 +1,8 @@
 <div align="center">
 
-# Closed World
+## Closed World
 
 **A puzzle game where every level is a Prolog program.**
-
-Reorder clauses, place cuts and fix negations — then watch an adventurer<br/>
-run your program through SLD resolution, one step at a time.
 
 ![SWI-Prolog](https://img.shields.io/badge/SWI--Prolog-10.0-E61B23?style=flat-square)
 ![Haskell](https://img.shields.io/badge/Haskell-GHC_9.6-5E5086?style=flat-square&logo=haskell&logoColor=white)
@@ -13,13 +10,11 @@ run your program through SLD resolution, one step at a time.
 
 </div>
 
----
-
 Closed World is a step-by-step interpreter for a subset of Prolog, written in Prolog and presented as a puzzle game. Backtracking, the cut and negation as failure are represented explicitly, so every resolution step can be shown, counted and explained.
 
-Every level is logically correct — the answer exists — but Prolog's search order keeps the adventurer from reaching it. You cannot rewrite the program, only change *how it runs*.
+Every level is logically correct (the answer exists) but Prolog's search order keeps the adventurer from reaching it. You cannot rewrite the program, only change *how it runs*.
 
-## Getting started
+### Getting started
 
 **Requirements:** [SWI-Prolog](https://www.swi-prolog.org/) 9 or later.
 
@@ -31,12 +26,12 @@ swipl prolog/console/main.pl
 
 Type `levels` to list the levels, `level 1` to start, and `help` for the commands.
 
-## Documentation
+### Documentation
 
 - [**Playing**](docs/playing.md) — the dungeon, commands, levels and how to write your own
 - [**Architecture**](docs/architecture.md) — how the engine works and how the project is organized
 
-## Roadmap
+### Roadmap
 
 - [x] Step-by-step engine: SLD resolution, backtracking, cut, negation, trap and torch
 - [x] Unification with occurs check
