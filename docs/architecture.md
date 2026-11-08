@@ -9,13 +9,29 @@ flowchart LR
     E --> P["game/play"]
     P --> M["engine<br/>step/4"]
     M --> T["trace"]
+    T --> D["game/dungeon<br/>rooms and doors"]
     T --> X["text"]
     X --> C["console"]
-    X -.-> S["server · JSON"]
-    S -.-> H["Haskell UI"]
+    D --> S["server · JSON"]
+    X --> S
+    S <--> H["Haskell UI<br/>brick"]
 ```
 
-Dashed parts are planned.
+## The dungeon
+
+`game/dungeon` turns a run into a map. Each node of the SLD tree becomes a room: its depth is the row and its alternative the column (a room's first child goes straight down, every other child opens a new column to the right). Each room and door records the step at which it is discovered, so the interface can draw the fog of war as a pure function of the current step.
+
+## The server
+
+The Haskell interface starts `swipl prolog/server/main.pl` and talks to it with one JSON request and one JSON reply per line:
+
+| Request | Reply |
+| :--- | :--- |
+| `{"op": "levels"}` | Level names and concepts |
+| `{"op": "level", "id": 2}` | Program, query, torch and tools |
+| `{"op": "run", "id": 2, "edits": [...]}` | The whole run: steps, rooms, doors, result and the edited level |
+
+Prolog decides everything that happens in a run; Haskell only draws what it receives.
 
 ## Why not a simple meta-interpreter
 
@@ -80,9 +96,16 @@ closed-world/
 │   │   │   ├── catalog.pl        find and number the levels
 │   │   │   └── native_runner.pl  run a level with native Prolog
 │   │   ├── edit/           player edits and tool budget
+│   │   ├── dungeon/        turn a run into rooms, doors and a path
 │   │   └── play.pl         run a level
-│   ├── text/               terms and trace events as text
-│   └── console/            playable text interface
+│   ├── text/               terms, trace events and errors as text
+│   ├── console/            playable text interface
+│   └── server/             JSON over stdio for the Haskell interface
+├── app/                    terminal interface in Haskell (brick)
+│   ├── Main.hs             state and keys
+│   ├── Protocol.hs         JSON types
+│   ├── Server.hs           start swipl and send requests
+│   └── UI/                 dungeon, panels and theme
 └── docs/
 ```
 

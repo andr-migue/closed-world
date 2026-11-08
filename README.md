@@ -38,8 +38,9 @@ Type `levels` to list the levels, `level 1` to start, and `help` for the command
 - [x] Playable console
 - [ ] Star rating
 - [ ] Levels 6 to 8
-- [ ] JSON server and dungeon layout
-- [ ] Terminal interface in Haskell with brick and half-block pixel art
+- [x] JSON server and dungeon layout
+- [x] Terminal interface prototype in Haskell with brick
+- [ ] Edits, half-block pixel art and fog memory in the Haskell interface
 - [ ] Trace analyzer: SLD tree and metrics
 
 > [!NOTE]
