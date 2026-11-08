@@ -26,16 +26,18 @@ Reaching the treasure earns one star, plus one for not using more torch than the
 
 ## Terminal interface
 
-Start it with `./closed-world`. It replays each run step by step on the dungeon map.
+Start it with `./closed-world`. It opens a menu with **Play**, **How to play** and **Quit**. Play lists the levels with the best stars earned in the session. Inside a level, the adventurer walks the dungeon map step by step; when the run ends, a dialog shows the result and what you can do next.
 
-| Key | Replay mode |
+| Key | Watching a run |
 | :--- | :--- |
+| `Space` | Release the adventurer, pause or resume |
 | `←` `→` | Previous / next step |
 | `Home` `End` | First / last step |
-| `1`–`9` | Load a level |
 | `e` | Edit the program |
 | `h` | Show or hide the level's hint |
-| `q` | Quit |
+| `?` | How to play |
+| `n` | Next level, after reaching the treasure |
+| `Esc` | Back to the levels |
 
 | Key | Edit mode |
 | :--- | :--- |
@@ -46,7 +48,7 @@ Start it with `./closed-world`. It replays each run step by step on the dungeon 
 | `u` / `R` | Undo the last edit / undo all edits |
 | `h` | Show or hide the level's hint |
 | `Enter` | Release the adventurer with the edited program |
-| `Esc` | Cancel a pick, or go back to replay |
+| `Esc` | Cancel a pick, or stop editing |
 
 A head moves the whole clause; a goal moves within its own clause or query.
 

@@ -105,11 +105,12 @@ closed-world/
 │   └── server/             JSON over stdio for the Haskell interface
 ├── closed-world            launcher: builds the interface if needed and starts it
 ├── app/                    terminal interface in Haskell (brick)
-│   ├── Main.hs             state and keys
+│   ├── Main.hs             wiring and keys for each screen
+│   ├── State.hs            game state and screens
 │   ├── Editor.hs           edit cursor and edits, as pure functions
 │   ├── Protocol.hs         JSON types
 │   ├── Server.hs           start swipl and send requests
-│   └── UI/                 dungeon, panels and theme
+│   └── UI/                 menu, levels, help, play screen, dungeon, panels and theme
 └── docs/
 ```
 

@@ -22,7 +22,7 @@ cd closed-world
 ./closed-world
 ```
 
-The first run builds the interface. Press a number to load a level and use the arrow keys to follow the adventurer step by step.
+The first run builds the interface. Choose **Play**, pick a level and press `Space` to release the adventurer; **How to play** explains the rest.
 
 To play in plain text with Prolog only, run `./closed-world console`: type `levels` to list the levels, `level 1` to start, and `help` for the commands.
 
