@@ -1,5 +1,5 @@
 :- module(render, [show_help/1, show_levels/1, show_level/1, show_trace/1,
-                   show_result/4, show_error/1]).
+                   show_result/4, show_hint/1, show_error/1]).
 
 :- use_module('../text/terms').
 :- use_module('../text/events').
@@ -42,6 +42,12 @@ show_result(Result, TorchUsed, Stars, Level) :-
     edits(Level, Edits),
     format("~n~s~nTorch used: ~w / ~w   Edits: ~w   ~s~n",
            [Text, TorchUsed, Level.torch, Edits, StarsText]).
+
+show_hint(Level) :-
+    (   Level.hint == ""
+    ->  format("No hint for this level.~n")
+    ;   format("Hint: ~s~n", [Level.hint])
+    ).
 
 show_error(Error) :-
     error_text(Error, Text),

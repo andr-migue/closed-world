@@ -4,6 +4,7 @@ command_help([
     "levels               list the levels",
     "level N              load level N",
     "show                 show the current program",
+    "hint                 show a hint for the level",
     "move C1 C2           move clause C1 to position C2",
     "goal T F To          move goal F to position To in T (T = clause number or q)",
     "cut T P              insert a cut at position P of T",
@@ -26,6 +27,7 @@ command(["help"], help).
 command(["levels"], levels).
 command(["level", N], level(Number)) :- int(N, Number).
 command(["show"], show).
+command(["hint"], hint).
 command(["run"], run).
 command(["reset"], reset).
 command(["quit"], quit).

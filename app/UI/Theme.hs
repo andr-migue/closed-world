@@ -2,7 +2,7 @@ module UI.Theme
   ( Name (..)
   , theme
   , aTitle, aRoom, aCurrent, aGhost, aTreasure, aTrap, aDeadEnd
-  , aConnector, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked
+  , aConnector, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked, aHint
   ) where
 
 import Brick
@@ -15,7 +15,7 @@ data Name = DungeonView
   deriving (Eq, Ord, Show)
 
 aTitle, aRoom, aCurrent, aGhost, aTreasure, aTrap, aDeadEnd,
-  aConnector, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked :: AttrName
+  aConnector, aLine, aLineCurrent, aMessage, aKey, aCursor, aPicked, aHint :: AttrName
 aTitle       = attrName "title"
 aRoom        = attrName "room"
 aCurrent     = attrName "current"
@@ -30,6 +30,7 @@ aMessage     = attrName "message"
 aKey         = attrName "key"
 aCursor      = attrName "cursor"
 aPicked      = attrName "picked"
+aHint        = attrName "hint"
 
 rgb :: Int -> Int -> Int -> V.Color
 rgb = V.linearColor
@@ -51,6 +52,7 @@ theme = attrMap V.defAttr
   , (aKey,         rgb 20 20 30 `on` rgb 200 170 110)
   , (aCursor,      rgb 20 20 30 `on` rgb 255 200 80)
   , (aPicked,      rgb 255 255 255 `on` rgb 70 90 160)
+  , (aHint,        fg (rgb 160 220 170) `V.withStyle` V.italic)
   , (progressCompleteAttr,   rgb 20 20 20 `on` rgb 255 150 30)
   , (progressIncompleteAttr, rgb 200 200 200 `on` rgb 60 50 50)
   ]

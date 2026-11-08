@@ -53,6 +53,8 @@ handle(unknown(Line), State, State) :-
 handle(Command, none, none) :-
     needs_level(Command),
     format("Load a level first: level N~n").
+handle(hint, session(Original, Current), session(Original, Current)) :-
+    show_hint(Current).
 handle(show, session(Original, Current), session(Original, Current)) :-
     show_level(Current).
 handle(reset, session(Original, _), session(Original, Original)) :-
@@ -72,6 +74,7 @@ handle(run, session(Original, Current), session(Original, Current)) :-
     show_result(Result, TorchUsed, Stars, Current).
 
 needs_level(show).
+needs_level(hint).
 needs_level(reset).
 needs_level(run).
 needs_level(edit(_)).

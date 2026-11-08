@@ -24,6 +24,7 @@ data Game = Game
   , current :: Maybe Run
   , stepIx  :: Int
   , mode    :: Mode
+  , hint    :: Bool
   , notice  :: String
   }
 
@@ -31,7 +32,7 @@ main :: IO ()
 main = do
   srv <- start
   summaries <- either (const []) id <$> call srv levelsRequest
-  game <- load 1 (Game srv summaries 1 [] Nothing 0 Replay "")
+  game <- load 1 (Game srv summaries 1 [] Nothing 0 Replay False "")
   void (defaultMain app game)
 
 app :: App Game e Name
@@ -47,7 +48,7 @@ load :: Int -> Game -> IO Game
 load n game = do
   reply <- call (server game) (runRequest n [])
   pure $ case reply of
-    Right run -> game { levelId = n, edits = [], current = Just run, stepIx = 0, mode = Replay, notice = "" }
+    Right run -> game { levelId = n, edits = [], current = Just run, stepIx = 0, mode = Replay, hint = False, notice = "" }
     Left err  -> game { notice = err }
 
 rerun :: [Edit] -> Game -> IO Game
@@ -68,7 +69,7 @@ draw game = [withBorderStyle unicode (borderWithLabel title body)]
         [ hBox [ padAll 1 (dungeon run (stepIx game))
                , vBorder
                , hLimit 52 (vBox [ programPanel (mode game) run (stepIx game)
-                                 , statusPanel run (stepIx game) ])
+                                 , statusPanel (hint game) run (stepIx game) ])
                ]
         , hBorder
         , if null (notice game)
@@ -77,6 +78,7 @@ draw game = [withBorderStyle unicode (borderWithLabel title body)]
         ]
 
 handle :: BrickEvent Name e -> EventM Name Game ()
+handle (VtyEvent (V.EvKey (V.KChar 'h') [])) = modify $ \g -> g { hint = not (hint g) }
 handle (VtyEvent (V.EvKey key mods)) = do
   game <- get
   case (mode game, current game) of

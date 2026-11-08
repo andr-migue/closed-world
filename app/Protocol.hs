@@ -28,6 +28,7 @@ data Level = Level
   { levelName        :: Text
   , levelConcept     :: Text
   , levelDescription :: Text
+  , levelHint        :: Text
   , levelProgram     :: [Text]
   , levelClauses     :: [ClauseParts]
   , levelQuery       :: Text
@@ -103,7 +104,7 @@ instance FromJSON LevelSummary where
 
 instance FromJSON Level where
   parseJSON = withObject "Level" $ \o ->
-    Level <$> o .: "name" <*> o .: "concept" <*> o .: "description"
+    Level <$> o .: "name" <*> o .: "concept" <*> o .: "description" <*> o .:? "hint" .!= ""
           <*> o .: "program" <*> o .: "clauses" <*> o .: "query" <*> o .: "query_goals"
           <*> o .: "torch" <*> o .: "tools" <*> o .: "edits" <*> o .:? "par"
 

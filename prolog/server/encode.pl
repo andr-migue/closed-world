@@ -14,7 +14,8 @@ level_json(Id, Level, Json) :-
     edits(Level, Edits),
     par_json(Level.par, Par),
     Json = _{id: Id, name: Level.name, concept: Level.concept,
-             description: Level.description, program: Program, clauses: Clauses,
+             description: Level.description, hint: Level.hint,
+             program: Program, clauses: Clauses,
              query: Query, query_goals: QueryGoals,
              torch: Level.torch, tools: Tools, edits: Edits, par: Par}.
 

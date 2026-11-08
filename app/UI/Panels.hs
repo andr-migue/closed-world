@@ -63,8 +63,8 @@ punctuate _ []       = []
 punctuate _ [w]      = [w]
 punctuate s (w : ws) = w : s : punctuate s ws
 
-statusPanel :: Run -> Int -> Widget Name
-statusPanel run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
+statusPanel :: Bool -> Run -> Int -> Widget Name
+statusPanel hint run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
   [ str "Torch"
   , progressBar (Just (show left ++ " / " ++ show torch)) (fromIntegral left / fromIntegral torch)
   , str " "
@@ -72,7 +72,9 @@ statusPanel run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
   , str ("Edits  " ++ show (levelEdits level))
   , str ("Par    " ++ parText (levelPar level))
   , str " "
-  , withAttr aMessage (txtWrap message)
+  , if hint
+      then withAttr aHint (txtWrap (hintText (levelHint level)))
+      else withAttr aMessage (txtWrap message)
   , if k == total && runResult run == T.pack "success"
       then padTop (Pad 1) (withAttr aTreasure (str (starsText (runStars run))))
       else emptyWidget
@@ -86,6 +88,11 @@ statusPanel run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
       | k == 0     = levelDescription level
       | k == total = stepText (runSteps run !! (k - 1)) <> T.pack "\n\n" <> runMessage run
       | otherwise  = stepText (runSteps run !! (k - 1))
+
+hintText :: T.Text -> T.Text
+hintText h
+  | T.null h  = T.pack "No hint for this level."
+  | otherwise = T.pack "Hint: " <> h
 
 parText :: Maybe Par -> String
 parText Nothing    = "none"
@@ -106,9 +113,9 @@ helpLine :: Mode -> Widget Name
 helpLine mode = padLeftRight 1 $ hBox $ case mode of
   Replay ->
     [ key "←/→", str " step   ", key "Home/End", str " start/end   "
-    , key "e", str " edit   ", key "1-9", str " level   ", key "q", str " quit" ]
+    , key "e", str " edit   ", key "h", str " hint   ", key "1-9", str " level   ", key "q", str " quit" ]
   Editing _ _ ->
     [ key "arrows", str " select   ", key "space", str " pick/drop   "
     , key "c", str " cut   ", key "x", str " uncut   ", key "u", str " undo   "
-    , key "R", str " reset   ", key "enter", str " run   ", key "esc", str " back" ]
+    , key "R", str " reset   ", key "h", str " hint   ", key "enter", str " run   ", key "esc", str " back" ]
   where key k = withAttr aKey (str (" " ++ k ++ " "))
