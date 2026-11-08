@@ -6,6 +6,10 @@ module Protocol
   , Step (..)
   , Room (..)
   , Door (..)
+  , ClauseParts (..)
+  , Tool (..)
+  , Target (..)
+  , Edit (..)
   , levelsRequest
   , runRequest
   ) where
@@ -24,9 +28,31 @@ data Level = Level
   , levelConcept     :: Text
   , levelDescription :: Text
   , levelProgram     :: [Text]
+  , levelClauses     :: [ClauseParts]
   , levelQuery       :: Text
+  , levelQueryGoals  :: [Text]
   , levelTorch       :: Int
+  , levelTools       :: [Tool]
+  , levelEdits       :: Int
   }
+
+data ClauseParts = ClauseParts
+  { clauseHead  :: Text
+  , clauseGoals :: [Text]
+  }
+
+data Tool = Tool
+  { toolName :: Text
+  , toolUses :: Int
+  }
+
+data Target = Clause Int | Query
+
+data Edit
+  = MoveClause Int Int
+  | MoveGoal Target Int Int
+  | AddCut Target Int
+  | RemoveCut Target Int
 
 data Run = Run
   { runLevel     :: Level
@@ -70,7 +96,30 @@ instance FromJSON LevelSummary where
 instance FromJSON Level where
   parseJSON = withObject "Level" $ \o ->
     Level <$> o .: "name" <*> o .: "concept" <*> o .: "description"
-          <*> o .: "program" <*> o .: "query" <*> o .: "torch"
+          <*> o .: "program" <*> o .: "clauses" <*> o .: "query" <*> o .: "query_goals"
+          <*> o .: "torch" <*> o .: "tools" <*> o .: "edits"
+
+instance FromJSON ClauseParts where
+  parseJSON = withObject "ClauseParts" $ \o ->
+    ClauseParts <$> o .: "head" <*> o .: "goals"
+
+instance FromJSON Tool where
+  parseJSON = withObject "Tool" $ \o ->
+    Tool <$> o .: "tool" <*> o .: "uses"
+
+instance ToJSON Edit where
+  toJSON (MoveClause from to) =
+    object ["edit" .= ("move_clause" :: Text), "from" .= from, "to" .= to]
+  toJSON (MoveGoal target from to) =
+    object ["edit" .= ("move_goal" :: Text), "target" .= target, "from" .= from, "to" .= to]
+  toJSON (AddCut target pos) =
+    object ["edit" .= ("add_cut" :: Text), "target" .= target, "pos" .= pos]
+  toJSON (RemoveCut target pos) =
+    object ["edit" .= ("remove_cut" :: Text), "target" .= target, "pos" .= pos]
+
+instance ToJSON Target where
+  toJSON (Clause n) = toJSON n
+  toJSON Query      = String "q"
 
 instance FromJSON Run where
   parseJSON = withObject "Run" $ \o ->
@@ -94,5 +143,5 @@ instance FromJSON Door where
 levelsRequest :: Value
 levelsRequest = object ["op" .= ("levels" :: Text)]
 
-runRequest :: Int -> Value
-runRequest n = object ["op" .= ("run" :: Text), "id" .= n, "edits" .= ([] :: [Value])]
+runRequest :: Int -> [Edit] -> Value
+runRequest n edits = object ["op" .= ("run" :: Text), "id" .= n, "edits" .= edits]

@@ -5,6 +5,7 @@ cradle:
       - "-dynamic"
       - "-threaded"
       - "Main"
+      - "Editor"
       - "Protocol"
       - "Server"
       - "UI.Theme"
