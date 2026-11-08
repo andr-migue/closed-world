@@ -3,7 +3,8 @@
 :- use_module('../text/terms').
 :- use_module('../text/events').
 
-level_summary(Id, Level, _{id: Id, name: Level.name, concept: Level.concept}).
+level_summary(Id, Level, _{id: Id, name: Level.name, concept: Level.concept,
+                           description: Level.description}).
 
 level_json(Id, Level, Json) :-
     maplist(clause_text, Level.program, Program),
