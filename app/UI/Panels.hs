@@ -2,6 +2,7 @@ module UI.Panels (programPanel, statusPanel, helpLine) where
 
 import Brick
 import Brick.Widgets.Border (borderWithLabel)
+import Brick.Widgets.ProgressBar (progressBar)
 import qualified Data.Text as T
 import Protocol
 import UI.Theme
@@ -19,13 +20,15 @@ programPanel run k = borderWithLabel (str " Program ") $ padLeftRight 1 $ padRig
 
 statusPanel :: Run -> Int -> Widget Name
 statusPanel run k = borderWithLabel (str " Status ") $ padLeftRight 1 $ vBox
-  [ str ("Step " ++ show k ++ " / " ++ show total)
-  , str ("Torch " ++ show (torchUsed run k) ++ " / " ++ show (levelTorch (runLevel run)))
+  [ str "Torch"
+  , progressBar (Just (show left ++ " / " ++ show torch)) (fromIntegral left / fromIntegral torch)
   , str " "
   , withAttr aMessage (txtWrap message)
   ]
   where
     total = length (runSteps run)
+    torch = levelTorch (runLevel run)
+    left  = torch - torchUsed run k
     message
       | k == 0     = levelDescription (runLevel run)
       | k == total = stepText (runSteps run !! (k - 1)) <> T.pack "\n\n" <> runMessage run

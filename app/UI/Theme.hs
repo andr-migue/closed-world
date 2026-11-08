@@ -8,6 +8,7 @@ module UI.Theme
 import Brick
 import Brick.Util (fg, on)
 import Brick.Widgets.Border (borderAttr)
+import Brick.Widgets.ProgressBar (progressCompleteAttr, progressIncompleteAttr)
 import qualified Graphics.Vty as V
 
 data Name = DungeonView
@@ -46,4 +47,6 @@ theme = attrMap V.defAttr
   , (aLineCurrent, rgb 255 255 255 `on` rgb 60 55 90)
   , (aMessage,     fg (rgb 230 210 170) `V.withStyle` V.italic)
   , (aKey,         rgb 20 20 30 `on` rgb 200 170 110)
+  , (progressCompleteAttr,   rgb 20 20 20 `on` rgb 255 150 30)
+  , (progressIncompleteAttr, rgb 200 200 200 `on` rgb 60 50 50)
   ]
