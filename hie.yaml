@@ -1,0 +1,12 @@
+cradle:
+  direct:
+    arguments:
+      - "-iapp"
+      - "-dynamic"
+      - "-threaded"
+      - "Main"
+      - "Protocol"
+      - "Server"
+      - "UI.Theme"
+      - "UI.Dungeon"
+      - "UI.Panels"
