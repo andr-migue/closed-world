@@ -26,8 +26,8 @@ Type `levels` to list the levels, `level 1` to start, and `help` for the command
 
 ### Documentation
 
-- [**Playing**](docs/playing.md) — the dungeon, commands, levels and how to write your own
-- [**Architecture**](docs/architecture.md) — how the engine works and how the project is organized
+- [**Playing**](docs/playing.md): the dungeon, commands, levels and how to write your own
+- [**Architecture**](docs/architecture.md): how the engine works and how the project is organized
 
 ### Roadmap
 
