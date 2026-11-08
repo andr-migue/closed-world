@@ -1,4 +1,4 @@
-:- ensure_loaded('../tools/swi_runner').
+:- ensure_loaded('../prolog/game/level/native_runner').
 :- name("The impatient ghost").
 :- concept("Negation as failure with an unbound variable").
 :- description("The ghost looks for a room without a monster to hide the treasure, but gives up before starting.").

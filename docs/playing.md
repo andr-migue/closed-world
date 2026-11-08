@@ -105,7 +105,7 @@ Torch used: 9 / 30   Edits: 1
 A level is a plain Prolog file in [`levels/`](../levels). Its metadata goes in directives, so the same file can be read as data by the engine and run by hand in SWI-Prolog:
 
 ```prolog
-:- ensure_loaded('../tools/swi_runner').
+:- ensure_loaded('../prolog/game/level/native_runner').
 :- name("The two wings").
 :- concept("Scope of the cut").
 :- description("Gold opens the west wing, but iron is cursed. You have a single cut.").

@@ -75,13 +75,14 @@ closed-world/
 │   │   ├── goals.pl        what kind of goal each one is
 │   │   └── run.pl          loop with the torch
 │   ├── game/
-│   │   ├── level/          read and list levels
+│   │   ├── level/          the level format
+│   │   │   ├── reader.pl         read a level as data, for the engine
+│   │   │   ├── catalog.pl        find and number the levels
+│   │   │   └── native_runner.pl  run a level with native Prolog
 │   │   ├── edit/           player edits and tool budget
 │   │   └── play.pl         run a level
 │   ├── text/               terms and trace events as text
 │   └── console/            playable text interface
-├── tools/
-│   └── swi_runner.pl       run a level with plain SWI-Prolog
 └── docs/
 ```
 

@@ -1,4 +1,4 @@
-:- ensure_loaded('../tools/swi_runner').
+:- ensure_loaded('../prolog/game/level/native_runner').
 :- name("The key ring").
 :- concept("Goal order").
 :- description("Only one key opens the treasure door. Trying every key on every door burns out the torch.").
