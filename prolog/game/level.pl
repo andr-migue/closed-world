@@ -1,4 +1,6 @@
-:- module(level, [load_level/2, conj_list/2]).
+:- module(level, [load_level/2]).
+
+:- use_module('../engine/engine', [conj_list/2]).
 
 load_level(File, Level) :-
     read_terms(File, Terms),
@@ -58,11 +60,3 @@ program_clause((Head :- Body)-Names, clause(Head, Goals, Names)) :- !,
     conj_list(Body, Goals).
 program_clause(Fact-Names, clause(Fact, [], Names)) :-
     must_be(callable, Fact).
-
-conj_list(Goal, [Goal]) :- var(Goal), !.
-conj_list((A, B), Goals) :- !,
-    conj_list(A, GoalsA),
-    conj_list(B, GoalsB),
-    append(GoalsA, GoalsB, Goals).
-conj_list(true, []) :- !.
-conj_list(Goal, [Goal]).
