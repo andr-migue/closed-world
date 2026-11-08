@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Protocol
   ( LevelSummary (..)
+  , LevelList (..)
   , Level (..)
   , Run (..)
   , Step (..)
@@ -23,6 +24,8 @@ data LevelSummary = LevelSummary
   , summaryName    :: Text
   , summaryConcept :: Text
   }
+
+newtype LevelList = LevelList [LevelSummary]
 
 data Level = Level
   { levelName        :: Text
@@ -101,6 +104,9 @@ data Door = Door
 instance FromJSON LevelSummary where
   parseJSON = withObject "LevelSummary" $ \o ->
     LevelSummary <$> o .: "id" <*> o .: "name" <*> o .: "concept"
+
+instance FromJSON LevelList where
+  parseJSON = withObject "LevelList" $ \o -> LevelList <$> o .: "levels"
 
 instance FromJSON Level where
   parseJSON = withObject "Level" $ \o ->
