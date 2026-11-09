@@ -104,27 +104,108 @@ closed-world/
 │   ├── console/            playable text interface
 │   └── server/             JSON over stdio for the Haskell interface
 ├── closed-world            launcher: builds the interface if needed and starts it
-├── app/                    terminal interface in Haskell (brick)
-│   ├── Main.hs             wiring and keys for each screen
-│   ├── State.hs            game state and screens
-│   ├── Editor.hs           edit cursor and edits, as pure functions
-│   ├── Protocol.hs         JSON types
-│   ├── Server.hs           start swipl and send requests
-│   └── UI/                 screens, panels, theme and the dungeon map
-│       ├── Canvas.hs       pixel framebuffer: drawing, dithered lighting, half-block output
-│       ├── Art.hs          small sprites for the map: hero, ghost, props, doors
-│       ├── Backdrop.hs     animated hall behind the menus
-│       ├── Frame.hs        panel frames with scrollbars in the border
-│       ├── Scroll.hs       scrollable styled lines that follow a focus
-│       ├── Panels.hs       torch, program, query, hint and chronicle panels
-│       ├── Palette.hs      fantasy palette shared by sprites and text
-│       ├── Pixel.hs        half-block icons
-│       ├── Sprites.hs      icons as data
-│       ├── PixelFont.hs    pixel font for titles and banners
-│       ├── Syntax.hs       Prolog syntax highlighting
-│       └── Dungeon/        map model (View), geometry and walking routes (Layout),
-│                           rooms and corridors (Paint), lights and actors (Scene)
+├── app/                    terminal interface in Haskell (brick), see below
 └── docs/
 ```
 
 Every edit is a pure relation `apply_edit(Level0, Edit, Level)`: it spends one use of the matching tool, transforms the program and counts the edit. Invalid edits raise standard Prolog errors (`permission_error` for a missing tool, `domain_error` for a bad position) and leave the level unchanged.
+
+## The terminal interface
+
+The interface lives in `app/`. Each folder is a layer, and a layer only uses the ones listed above it: `Sprites` know nothing about `Dungeon`, and `Dungeon` knows nothing about panels or keys.
+
+```text
+app/
+├── Main.hs                 start the Prolog server and the interface
+├── Style/                  how things look
+│   ├── Colors.hs           every named color
+│   └── Theme.hs            text styles for panels, code and keys
+├── Prolog/                 talking to the engine
+│   ├── Server.hs           start swipl and send one request per line
+│   └── Protocol.hs         the JSON messages, as Haskell types
+├── Game/                   the state of a session, without drawing
+│   ├── State.hs            everything the interface remembers
+│   ├── Clock.hs            frames, animation time and walking speeds
+│   ├── RunInfo.hs          questions about the current run: finished, won, torch left
+│   └── Editor.hs           the edit cursor and the edits it produces
+├── Pixels/                 the pixel engine
+│   ├── Color.hs            mix, darken and pack colors
+│   ├── Canvas.hs           a grid of pixels to draw on
+│   ├── Light.hs            lights and the dithered lighting pass
+│   ├── Terminal.hs         turn pixels into half-block characters, with text on top
+│   └── Icon.hs             draw a small icon straight into a panel
+├── Sprites/                pixel art for the map, one file per family
+│   ├── Sprite.hs           read a sprite from text and stamp it on the canvas
+│   ├── Inks.hs             which color each letter means
+│   ├── Hero.hs             the adventurer, facing down, up and sideways
+│   ├── Ghost.hs            the ghost of not/1
+│   ├── Torches.hs          wall torches
+│   ├── WallDecor.hs        banners and cobwebs
+│   ├── Furniture.hs        barrels, crates and urns
+│   ├── Remains.hs          bones and skulls
+│   ├── Mushrooms.hs        glowing mushrooms
+│   ├── Chest.hs            the treasure chest
+│   └── Doors.hs            shut and sealed doors
+├── Icons/                  pixel art for menus and panels
+│   ├── Inks.hs             which color each letter means
+│   ├── Characters.hs       adventurer and ghost
+│   ├── Places.hs           entrance, chest, skull, rubble, portal
+│   ├── Torch.hs            the burning and the burnt-out torch
+│   ├── Stars.hs            the star rating
+│   ├── LevelIcons.hs       one icon per level
+│   └── Font.hs             the big pixel letters of titles
+├── Dungeon/                the map
+│   ├── Layout.hs           where each room, door, torch and chest goes
+│   ├── Timeline.hs         what the dungeon looks like at a given step
+│   ├── Walking.hs          the path between two rooms and walking along it
+│   ├── Cast.hs             where the adventurer and the ghost are
+│   ├── Camera.hs           what part of the map is on screen
+│   ├── Random.hs           repeatable randomness for decoration
+│   ├── Textures.hs         floor tiles, bricks, cobbles and rock
+│   ├── Tones.hs            lit, remembered and ghostly colors
+│   ├── Room.hs             walls, floor, name plaque and wall torches
+│   ├── Decor.hs            cobwebs, banners, cracks, moss, props and puddles
+│   ├── Features.hs         entrance stairs, treasure, spike pit, rubble
+│   ├── Corridor.hs         corridors between rooms
+│   ├── Doorway.hs          one door in a room's wall
+│   ├── Actors.hs           drawing the adventurer, the ghost and dust
+│   ├── Effects.hs          portal, glints, embers and step effects
+│   ├── Lights.hs           every light source on the map
+│   ├── Minimap.hs          the whole tree in a corner
+│   └── Scene.hs            puts all of the above together
+├── Widgets/                building blocks for screens
+│   ├── Panel.hs            a framed panel with scrollbars in its border
+│   ├── Scroll.hs           scrollable lines that keep a focus in view
+│   ├── Syntax.hs           Prolog syntax colors
+│   ├── KeyBar.hs           the row of key hints
+│   └── Header.hs           the top bar
+├── Panels/                 the panels beside the map
+│   ├── Torch.hs            torch bar, tools, edits and par
+│   ├── Program.hs          the program, in replay and in edit mode
+│   ├── Query.hs            the query
+│   ├── Chronicle.hs        the list of steps so far
+│   └── Hint.hs             the level's hint
+├── Screens/                whole screens
+│   ├── Menu.hs, Levels.hs, Help.hs, Play.hs, Result.hs
+│   ├── Backdrop.hs         the animated hall behind the menus
+│   └── Layers.hs           placing screens over the backdrop, and the size check
+└── Tui/                    wiring
+    ├── Names.hs            names for panels the mouse and the scroll refer to
+    ├── Draw.hs             which screen to draw
+    ├── Events.hs           what every key, wheel turn and clock tick does
+    └── Actions.hs          the actions those events perform
+```
+
+### Changing a sprite
+
+A sprite is a list of text rows, one character per pixel. `.` is transparent and every other letter is a color listed in `Sprites/Inks.hs` (or `Icons/Inks.hs` for icons). To change the chest, open `Sprites/Chest.hs` and edit the picture:
+
+```haskell
+chestOpen = sprite
+  [ ".kkkkkkkk."
+  , "kBbbbbbbBk"
+  , "kyYyyYyyYk"
+  ...
+```
+
+Rows can have any width, and a sprite can have any number of frames (`Sprites/Hero.hs` has three per direction). Where a sprite is placed is decided in `Dungeon/` (for example `chestCenter` in `Dungeon/Layout.hs`), so a sprite can be redrawn without touching anything else.
