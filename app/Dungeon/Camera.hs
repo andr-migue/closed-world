@@ -1,6 +1,7 @@
 module Dungeon.Camera
   ( followCamera
   , cameraCorner
+  , clampPan
   ) where
 
 import Dungeon.Layout
@@ -18,8 +19,20 @@ followCamera (viewW, viewH) (tx, ty) (Just (cx, cy)) =
 cameraCorner :: Layout -> (Int, Int) -> (Double, Double) -> (Int, Int) -> (Int, Int)
 cameraCorner ly (viewW, viewH) (fx, fy) (panX, panY) = (x, 2 * (y `div` 2))
   where
-    x = clampTo (round fx - viewW `div` 2 + panX) viewW (lyWidth ly)
-    y = clampTo (round fy - viewH `div` 2 + panY) viewH (lyHeight ly)
-    clampTo c view world
-      | world <= view = (world - view) `div` 2
-      | otherwise     = max (-margin) (min (world - view + margin) c)
+    x = clampTo (lyWidth ly) viewW (centered fx viewW + panX)
+    y = clampTo (lyHeight ly) viewH (centered fy viewH + panY)
+
+clampPan :: Layout -> (Int, Int) -> (Double, Double) -> (Int, Int) -> (Int, Int)
+clampPan ly (viewW, viewH) (fx, fy) (panX, panY) = (fit (lyWidth ly) viewW fx panX, fit (lyHeight ly) viewH fy panY)
+  where
+    fit world view f p
+      | world <= view = 0
+      | otherwise     = clampTo world view (centered f view + p) - centered f view
+
+centered :: Double -> Int -> Int
+centered f view = round f - view `div` 2
+
+clampTo :: Int -> Int -> Int -> Int
+clampTo world view c
+  | world <= view = (world - view) `div` 2
+  | otherwise     = max (-margin) (min (world - view + margin) c)

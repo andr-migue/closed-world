@@ -8,6 +8,9 @@ module Tui.Actions
   , replayFromStart
   , changeSpeed
   , panBy
+  , recenter
+  , dragTo
+  , endDrag
   , scrollPanel
   , followCamera'
   , goTo
@@ -21,8 +24,10 @@ module Tui.Actions
 import Brick
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Tui.Names (Name (..))
-import Dungeon.Camera (followCamera)
+import Dungeon.Camera (clampPan, followCamera)
+import Dungeon.Layout (layout)
 import Dungeon.Scene (sceneFocus)
 import Game.Clock
 import Game.Editor
@@ -56,10 +61,13 @@ applyEdits cursor newEdits = do
   put game' { mode = Editing (fitCursor game' cursor) Nothing }
 
 fresh :: Game -> Game
-fresh game = following game { stepIx = 0, stepStart = -1000, camera = Nothing, notice = "" }
+fresh game = recentered game { stepIx = 0, stepStart = -1000, camera = Nothing, notice = "" }
 
 following :: Game -> Game
-following game = game { pan = (0, 0), scrolls = M.empty }
+following game = game { scrolls = M.empty }
+
+recentered :: Game -> Game
+recentered game = following game { pan = (0, 0), drag = Nothing }
 
 fitCursor :: Game -> Cursor -> Cursor
 fitCursor game cursor = case current game of
@@ -71,7 +79,8 @@ step animate f = modify $ \game ->
   let k = max 0 (min (totalSteps game) (f (stepIx game)))
       changed = k /= stepIx game
       arrived = changed && k == totalSteps game
-  in rememberStars (following game)
+      leaving = if stepIx game == 0 && k > 0 then recentered else following
+  in rememberStars (leaving game)
        { stepIx    = k
        , playing   = playing game && k < totalSteps game
        , stepStart = if changed then (if animate then frame game else frame game - 1000) else stepStart game
@@ -85,31 +94,56 @@ rememberStars game
   | otherwise = game
 
 play :: EventM Name Game ()
-play = modify $ \g -> following g { mode = Replay, stepIx = 0, playing = True, notice = "", stepStart = frame g }
+play = modify $ \g -> recentered g { mode = Replay, stepIx = 0, playing = True, notice = "", stepStart = frame g }
 
 replayFromStart :: EventM Name Game ()
-replayFromStart = modify $ \g -> following g { stepIx = 0, playing = True, stepStart = frame g }
+replayFromStart = modify $ \g -> recentered g { stepIx = 0, playing = True, stepStart = frame g }
 
 togglePlay :: EventM Name Game ()
 togglePlay = modify $ \g ->
-  g { playing = not (playing g)
+  (if stepIx g == 0 && not (playing g) then recentered g else g)
+    { playing = not (playing g)
     , stepStart = if playing g then stepStart g else min (stepStart g) (frame g - stepFrames g) }
 
 changeSpeed :: Int -> EventM Name Game ()
 changeSpeed d = modify $ \g -> g { speed = max 0 (min (length speeds - 1) (speed g + d)) }
 
 panBy :: Int -> Int -> EventM Name Game ()
-panBy dx dy = modify $ \g -> let (x, y) = pan g in g { pan = (x + dx, y + dy) }
+panBy dx dy = do
+  extent <- lookupExtent DungeonView
+  modify $ \g -> case (current g, extent) of
+    (Just run, Just ext) ->
+      let (x, y) = pan g
+          focus = fromMaybe (sceneFocus run (stepIx g) 1) (camera g)
+          moved = clampPan (layout run) (dungeonView ext) focus (x + dx, y + dy)
+      in if moved == pan g then g else g { pan = moved, viewMoved = True }
+    _ -> g
+
+recenter :: EventM Name Game ()
+recenter = modify $ \g -> g { pan = (0, 0), viewMoved = True }
+
+dragTo :: (Int, Int) -> EventM Name Game ()
+dragTo (c, r) = do
+  game <- get
+  put game { drag = Just (c, r) }
+  case drag game of
+    Just (c0, r0) -> panBy (c0 - c) (2 * (r0 - r))
+    Nothing       -> pure ()
+
+endDrag :: EventM Name Game ()
+endDrag = modify $ \g -> g { drag = Nothing }
+
+dungeonView :: Extent Name -> (Int, Int)
+dungeonView ext = let (w, h) = extentSize ext in (w - 2, 2 * (h - 2))
 
 followCamera' :: EventM Name Game ()
 followCamera' = do
   extent <- lookupExtent DungeonView
   modify $ \g -> case (screen g, current g, extent) of
-    (Playing, Just run, Just ext) ->
-      let (w, h) = extentSize ext
-          p = if stepIx g == 0 then 1 else progress g
+    (Playing, Just run, Just ext) | pan g == (0, 0) || camera g == Nothing ->
+      let p = if stepIx g == 0 then 1 else progress g
           target = sceneFocus run (stepIx g) p
-      in g { camera = Just (followCamera (w - 2, 2 * (h - 2)) target (camera g)) }
+      in g { camera = Just (followCamera (dungeonView ext) target (camera g)) }
     _ -> g
 
 scrollPanel :: Name -> Int -> Int -> EventM Name Game ()

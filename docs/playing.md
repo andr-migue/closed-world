@@ -34,7 +34,8 @@ Start it with `./closed-world`. It opens a menu with **Play**, **How to play** a
 | `←` `→` | Previous / next step |
 | `Home` `End` | First / last step |
 | `+` `-` | Walk faster / slower |
-| `W` `A` `S` `D` | Pan the map (stepping follows the adventurer again) |
+| `W` `A` `S` `D` | Pan the map; dragging it with the mouse or touchpad works too |
+| `c` | Centre the map on the adventurer again |
 | `m` | Show or hide the minimap |
 | `f` | Fluid animation (30 fps while walking) or eco (15 fps, lighter on the CPU) |
 | `PgUp` `PgDn` `[` `]` | Scroll the program; the mouse wheel scrolls any panel (with `Shift`, sideways) |

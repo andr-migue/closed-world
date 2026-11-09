@@ -51,7 +51,7 @@ mapPanel game run = clickable DungeonView $ panel (Panel "DUNGEON" info aGold 0)
       , scCamera   = camera game
       }
     info
-      | pan game /= (0, 0) = "panned · step to follow"
+      | pan game /= (0, 0) = "panned · c to follow"
       | otherwise = T.unpack (levelConcept (runLevel run))
 
 footer :: Game -> Widget Name
@@ -68,4 +68,4 @@ footer game
             , ("?", "help"), ("esc", "levels") ]
         | otherwise ->
             [ ("space", if playing game then "pause" else "play"), ("←/→", "step"), ("+/-", "speed")
-            , ("wasd", "pan"), ("e", "edit"), ("h", "hint"), ("pgup/dn", "scroll"), ("?", "help"), ("esc", "levels") ]
+            , ("wasd", "pan"), ("c", "centre"), ("e", "edit"), ("h", "hint"), ("pgup/dn", "scroll"), ("?", "help"), ("esc", "levels") ]

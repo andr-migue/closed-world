@@ -15,11 +15,26 @@ import Screens.Help (helpPages)
 
 handle :: BrickEvent Name Tick -> EventM Name Game ()
 handle (AppEvent Tick) = tick
+handle (MouseDown DungeonView button mods (Location loc)) = do
+  case button of
+    V.BLeft       -> dragTo loc
+    V.BScrollUp   -> wheel DungeonView mods (-1)
+    V.BScrollDown -> wheel DungeonView mods 1
+    _             -> pure ()
+  continueWithoutRedraw
 handle (MouseDown n button mods _) = invalidateCache >> case button of
   V.BScrollUp   -> wheel n mods (-1)
   V.BScrollDown -> wheel n mods 1
   _             -> pure ()
-handle (VtyEvent (V.EvKey key _)) = do
+handle (MouseUp _ _ _) = endDrag >> continueWithoutRedraw
+handle (VtyEvent (V.EvKey key _)) = get >>= \game -> case (screen game, mode game, viewKey key) of
+  (Playing, Replay, Just move) -> move >> continueWithoutRedraw
+  _                            -> keyPress key
+handle (VtyEvent (V.EvMouseUp {})) = endDrag >> continueWithoutRedraw
+handle (VtyEvent _) = invalidateCache
+
+keyPress :: V.Key -> EventM Name Game ()
+keyPress key = do
   invalidateCache
   game <- get
   case screen game of
@@ -29,12 +44,20 @@ handle (VtyEvent (V.EvKey key _)) = do
     Playing     -> case (mode game, current game) of
       (Editing cursor pick, Just run) -> editKey (runLevel run) cursor pick key
       _                               -> replayKey key
-handle (VtyEvent _) = invalidateCache
-handle _ = pure ()
+
+viewKey :: V.Key -> Maybe (EventM Name Game ())
+viewKey key = case key of
+  V.KChar 'w' -> Just (panBy 0 (-6))
+  V.KChar 's' -> Just (panBy 0 6)
+  V.KChar 'a' -> Just (panBy (-10) 0)
+  V.KChar 'd' -> Just (panBy 10 0)
+  V.KChar 'c' -> Just recenter
+  _           -> Nothing
 
 tick :: EventM Name Game ()
 tick = do
-  modify $ \g -> g { frame = frame g + 1 }
+  moved <- gets viewMoved
+  modify $ \g -> g { frame = frame g + 1, viewMoved = False }
   followCamera'
   game <- get
   case (screen game, mode game) of
@@ -47,7 +70,7 @@ tick = do
             (Playing, Replay) -> fluid game && (playing game || progress game < 1)
             _ -> False
           ticked = clock game /= clock game { frame = frame game - 1 }
-      when (not moving && not ticked) continueWithoutRedraw
+      when (not moving && not ticked && not moved) continueWithoutRedraw
 
 wheel :: Name -> [V.Modifier] -> Int -> EventM Name Game ()
 wheel n mods d
@@ -111,10 +134,6 @@ replayKey key = do
     V.KChar 'f' -> modify toggleFluid
     V.KChar 'e' -> modify $ \g -> g { mode = Editing startCursor Nothing, playing = False, notice = "", scrolls = M.empty }
     V.KChar 'h' -> toggleHint
-    V.KChar 'w' -> panBy 0 (-6)
-    V.KChar 's' -> panBy 0 6
-    V.KChar 'a' -> panBy (-10) 0
-    V.KChar 'd' -> panBy 10 0
     V.KChar '?' -> stop >> goTo (Help 0 Playing)
     V.KChar 'n' | finished game, succeeded game, hasNextLevel game -> io (load (levelId game + 1))
     V.KEsc      -> stop >> goTo (Levels (levelId game - 1))

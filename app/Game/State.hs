@@ -39,6 +39,8 @@ data Game = Game
   , minimap   :: Bool
   , camera    :: Maybe (Double, Double)
   , fluid     :: Bool
+  , drag      :: Maybe (Int, Int)
+  , viewMoved :: Bool
   }
 
 data Tick = Tick
@@ -69,6 +71,8 @@ newGame srv summaries problem = Game
   , minimap   = True
   , camera    = Nothing
   , fluid     = True
+  , drag      = Nothing
+  , viewMoved = False
   }
 
 menuItems :: [MenuItem]
