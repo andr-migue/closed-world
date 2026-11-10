@@ -31,19 +31,5 @@ To play in plain text with Prolog only, run `./closed-world console`: type `leve
 - [**Playing**](docs/playing.md): the dungeon, commands, levels and how to write your own
 - [**Architecture**](docs/architecture.md): how the engine works and how the project is organized
 
-### Roadmap
-
-- [x] Step-by-step engine: SLD resolution, backtracking, cut, negation, trap and torch
-- [x] Unification with occurs check
-- [x] Level format and eight levels
-- [x] Player edits with a limited tool budget
-- [x] Playable console
-- [x] Star rating
-- [x] JSON server and dungeon layout
-- [x] Terminal interface prototype in Haskell with brick
-- [x] Program edits in the Haskell interface
-- [x] Half-block pixel art and fog memory in the Haskell interface
-- [ ] Trace analyzer: SLD tree and metrics
-
 > [!NOTE]
 > Closed World is the final project for a Declarative Programming course. The name refers to the *closed world assumption*: in the dungeon, only what the program declares or can derive exists.
