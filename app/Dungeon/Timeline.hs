@@ -26,7 +26,7 @@ data RoomView = RoomView
   , rvState  :: RoomState
   }
 
-roomsAt :: Run -> Int -> [RoomView]
+roomsAt :: LevelRun -> Int -> [RoomView]
 roomsAt run k = map view (filter ((<= k) . roomStep) (runRooms run))
   where
     here = currentRoom run k
@@ -45,14 +45,14 @@ roomsAt run k = map view (filter ((<= k) . roomStep) (runRooms run))
       | i `elem` path  = OnPath
       | otherwise      = Abandoned
 
-currentRoom :: Run -> Int -> Maybe Int
+currentRoom :: LevelRun -> Int -> Maybe Int
 currentRoom _ 0   = Just 0
 currentRoom run k = stepRoom (runSteps run !! (k - 1))
 
-lastKnownRoom :: Run -> Int -> Maybe Int
+lastKnownRoom :: LevelRun -> Int -> Maybe Int
 lastKnownRoom run k = listToMaybe (mapMaybe (currentRoom run) [k, k - 1 .. 0])
 
-eventAt :: Run -> Int -> Maybe Step
+eventAt :: LevelRun -> Int -> Maybe Step
 eventAt run k
   | k >= 1 && k <= length (runSteps run) = Just (runSteps run !! (k - 1))
   | otherwise = Nothing
@@ -60,7 +60,7 @@ eventAt run k
 isEvent :: String -> Maybe Step -> Bool
 isEvent name = maybe False ((== T.pack name) . stepEvent)
 
-ancestors :: Run -> Maybe Int -> [Int]
+ancestors :: LevelRun -> Maybe Int -> [Int]
 ancestors run = go
   where
     go Nothing  = []

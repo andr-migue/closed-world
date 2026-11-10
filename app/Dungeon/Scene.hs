@@ -34,7 +34,7 @@ import Pixels.Terminal
 import Prolog.Protocol
 
 data Scene = Scene
-  { scRun      :: Run
+  { scRun      :: LevelRun
   , scStep     :: Int
   , scProgress :: Double
   , scTime     :: Int
@@ -49,7 +49,7 @@ dungeon sc = Widget Greedy Greedy $ do
   ctx <- getContext
   render (raw (sceneImage sc (max 1 (availWidth ctx)) (max 1 (availHeight ctx))))
 
-sceneFocus :: Run -> Int -> Double -> (Double, Double)
+sceneFocus :: LevelRun -> Int -> Double -> (Double, Double)
 sceneFocus run k p = let ly = layout run in focusOf ly (castAt ly run k p)
 
 sceneImage :: Scene -> Int -> Int -> V.Image

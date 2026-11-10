@@ -6,7 +6,7 @@ import Game.State
 import Prolog.Protocol
 import Style.Theme
 
-header :: Game -> Maybe Run -> Widget Name
+header :: Game -> Maybe LevelRun -> Widget Name
 header game mrun = vLimit 1 $ withDefAttr aHeader $ hBox $
   withAttr aBrand (str " ◆ CLOSED WORLD ") : case mrun of
     Just run ->

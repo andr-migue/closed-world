@@ -8,7 +8,7 @@ import Style.Theme
 import Widgets.Panel
 import Widgets.Scroll (wrapText)
 
-hintPanel :: Run -> Widget Name
+hintPanel :: LevelRun -> Widget Name
 hintPanel run = Widget Greedy Fixed $ do
   ctx <- getContext
   let w = availWidth ctx

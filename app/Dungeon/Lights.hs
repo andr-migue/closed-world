@@ -11,7 +11,7 @@ import Dungeon.Walking (Actor (..))
 import Pixels.Light (Light (..))
 import Prolog.Protocol
 
-sceneLights :: Layout -> Run -> Int -> Double -> Int -> Double -> Cast -> [(Room, RoomView)] -> [Light]
+sceneLights :: Layout -> LevelRun -> Int -> Double -> Int -> Double -> Cast -> [(Room, RoomView)] -> [Light]
 sceneLights ly run k p time torch cast rooms =
   heroTorch ++ ghostGlow ++ concatMap (uncurry (roomLights time)) rooms ++ stepLights ly run k p
   where
@@ -33,7 +33,7 @@ roomLights time r v =
        "exit"     -> [at (portalCenter r) 22 (0.6, 0.45, 1.0) 1.0]
        _          -> []
 
-stepLights :: Layout -> Run -> Int -> Double -> [Light]
+stepLights :: Layout -> LevelRun -> Int -> Double -> [Light]
 stepLights ly run k p = case T.unpack . stepEvent <$> eventAt run k of
   Just "cut"       -> [ at d 9 (1.0, 0.2, 0.3) (1.6 * (1 - p)) | d <- doorsChangedAt ly k "closed" ]
   Just "mismatch"  -> [ at d 7 (1.0, 0.3, 0.3) (1.4 * pulse) | d <- doorsChangedAt ly k "shut" ]

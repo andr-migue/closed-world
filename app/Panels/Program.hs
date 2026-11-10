@@ -10,7 +10,7 @@ import Widgets.Panel
 import Widgets.Scroll
 import Widgets.Syntax (segments)
 
-programPanel :: Mode -> Run -> Int -> (Int, Int) -> Widget Name
+programPanel :: Mode -> LevelRun -> Int -> (Int, Int) -> Widget Name
 programPanel m run k delta = clickable ProgramView $ reportExtent ProgramView $
   panel (Panel "PROGRAM" info aGold 1) $ \w h -> renderContent (programContent m run k) w h delta
   where
@@ -19,7 +19,7 @@ programPanel m run k delta = clickable ProgramView $ reportExtent ProgramView $
       Editing _ Nothing  -> "editing"
       Replay -> maybe (show (length (levelProgram (runLevel run))) ++ " clauses") (\c -> "clause " ++ show c) (activeClause run k)
 
-programContent :: Mode -> Run -> Int -> Content
+programContent :: Mode -> LevelRun -> Int -> Content
 programContent m run k = case m of
   Replay -> Content (zipWith replayLine [1 ..] (levelProgram level)) gutterWidth (fmap (\i -> Focus (i - 1) 0 0) active) Center
   Editing cursor pick ->
@@ -40,7 +40,7 @@ programContent m run k = case m of
       | Just i == active = Line [(aGutterCurrent, T.pack ("▸ " ++ number i ++ " "))] (segments text) (Just aLineCurrent)
       | otherwise        = Line [(aGutter, T.pack ("  " ++ number i ++ " "))] (segments text) Nothing
 
-activeClause :: Run -> Int -> Maybe Int
+activeClause :: LevelRun -> Int -> Maybe Int
 activeClause run k
   | k > 0 && k <= length (runSteps run) = stepClause (runSteps run !! (k - 1))
   | otherwise = Nothing

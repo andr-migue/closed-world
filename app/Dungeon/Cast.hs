@@ -16,7 +16,7 @@ data Cast = Cast
   , castGhost :: Maybe Actor
   }
 
-castAt :: Layout -> Run -> Int -> Double -> Cast
+castAt :: Layout -> LevelRun -> Int -> Double -> Cast
 castAt ly run k p
   | k == 0 = Cast (stand <$> room 0) Nothing
   | otherwise = Cast hero ghost
@@ -55,10 +55,10 @@ castAt ly run k p
         | Just h <- heroTo -> Just ((walk (route ly a h) walked) { actorAlpha = 1 - walked })
       _ -> Nothing
 
-heroRoom :: Layout -> Run -> Int -> Maybe Int
+heroRoom :: Layout -> LevelRun -> Int -> Maybe Int
 heroRoom ly run k = listToMaybe [roomId r | r <- maybe [] (ancestry ly) (lastKnownRoom run k), not (roomGhost r)]
 
-ghostRoom :: Layout -> Run -> Int -> Maybe Int
+ghostRoom :: Layout -> LevelRun -> Int -> Maybe Int
 ghostRoom ly run k = case lastKnownRoom run k >>= \i -> M.lookup i (lyRooms ly) of
   Just r | roomGhost r -> Just (roomId r)
   _ -> Nothing

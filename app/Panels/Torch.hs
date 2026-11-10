@@ -14,7 +14,7 @@ import Style.Colors
 import Style.Theme
 import Widgets.Panel
 
-torchPanel :: Game -> Run -> Int -> Widget Name
+torchPanel :: Game -> LevelRun -> Int -> Widget Name
 torchPanel game run k = Widget Greedy Fixed $ do
   ctx <- getContext
   let w = availWidth ctx

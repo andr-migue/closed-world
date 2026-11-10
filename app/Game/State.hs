@@ -23,7 +23,7 @@ data Game = Game
   , screen    :: Screen
   , levelId   :: Int
   , edits     :: [Edit]
-  , current   :: Maybe Run
+  , current   :: Maybe LevelRun
   , stepIx    :: Int
   , mode      :: Mode
   , hint      :: Bool

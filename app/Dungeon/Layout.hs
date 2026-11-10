@@ -44,7 +44,7 @@ data Sconce = Sconce
   , sconceY :: Int
   }
 
-layout :: Run -> Layout
+layout :: LevelRun -> Layout
 layout run = Layout rooms slots w h
   where
     rooms = M.fromList [(roomId r, r) | r <- runRooms run]

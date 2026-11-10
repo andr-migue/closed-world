@@ -24,12 +24,12 @@ succeeded game = maybe False ((== T.pack "success") . runResult) (current game)
 hasNextLevel :: Game -> Bool
 hasNextLevel game = levelId game < length (levels game)
 
-torchUsed :: Run -> Int -> Int
+torchUsed :: LevelRun -> Int -> Int
 torchUsed run k = length [s | s <- take k (runSteps run), stepEvent s `notElem` free]
   where free = [T.pack "success", T.pack "trap"]
 
-torchLeft :: Run -> Int -> Int
+torchLeft :: LevelRun -> Int -> Int
 torchLeft run k = levelTorch (runLevel run) - torchUsed run k
 
-torchRatio :: Run -> Int -> Double
+torchRatio :: LevelRun -> Int -> Double
 torchRatio run k = fromIntegral (max 0 (torchLeft run k)) / fromIntegral (max 1 (levelTorch (runLevel run)))

@@ -3,7 +3,7 @@ module Prolog.Protocol
   ( LevelSummary (..)
   , LevelList (..)
   , Level (..)
-  , Run (..)
+  , LevelRun (..)
   , Step (..)
   , Room (..)
   , Door (..)
@@ -66,7 +66,7 @@ data Edit
   | AddCut Target Int
   | RemoveCut Target Int
 
-data Run = Run
+data LevelRun = LevelRun
   { runLevel     :: Level
   , runResult    :: Text
   , runMessage   :: Text
@@ -143,9 +143,9 @@ instance ToJSON Target where
   toJSON (Clause n) = toJSON n
   toJSON Query      = String "q"
 
-instance FromJSON Run where
-  parseJSON = withObject "Run" $ \o ->
-    Run <$> o .: "level" <*> o .: "result" <*> o .: "message" <*> o .: "torch_used" <*> o .: "stars"
+instance FromJSON LevelRun where
+  parseJSON = withObject "LevelRun" $ \o ->
+    LevelRun <$> o .: "level" <*> o .: "result" <*> o .: "message" <*> o .: "torch_used" <*> o .: "stars"
         <*> o .: "steps" <*> o .: "rooms" <*> o .: "doors"
 
 instance FromJSON Step where

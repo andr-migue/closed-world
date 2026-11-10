@@ -10,11 +10,11 @@ import Widgets.Panel
 import Widgets.Scroll
 import Widgets.Syntax (segments)
 
-queryPanel :: Mode -> Run -> (Int, Int) -> Widget Name
+queryPanel :: Mode -> LevelRun -> (Int, Int) -> Widget Name
 queryPanel m run delta = clickable QueryView $ reportExtent QueryView $ vLimit 3 $
   panel (Panel "QUERY" "" aGold 1) $ \w h -> renderContent (queryContent m run) w h delta
 
-queryContent :: Mode -> Run -> Content
+queryContent :: Mode -> LevelRun -> Content
 queryContent m run = case m of
   Editing cursor pick | isQueryRow level (curRow cursor) -> editing cursor pick
   _ -> Content [plainLine ((aGold, T.pack "?- ") : segments (levelQuery level) ++ [(aPunct, T.pack ".")])] 0 Nothing Center

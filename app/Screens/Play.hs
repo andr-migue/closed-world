@@ -19,7 +19,7 @@ import Widgets.Header
 import Widgets.KeyBar
 import Widgets.Panel
 
-playScreen :: Game -> Run -> Widget Name
+playScreen :: Game -> LevelRun -> Widget Name
 playScreen game run = vBox
   [ cached CacheHeader (header game (Just run))
   , hBox [mapPanel game run, sidebar]
@@ -35,7 +35,7 @@ playScreen game run = vBox
       ++ [ hintPanel run | hint game ]
       ++ [ vLimitPercent 38 (cached CacheChronicle (chroniclePanel run k (scrollOf ChronicleView game))) ]
 
-mapPanel :: Game -> Run -> Widget Name
+mapPanel :: Game -> LevelRun -> Widget Name
 mapPanel game run = clickable DungeonView $ panel (Panel "DUNGEON" info aGold 0) $ \w h ->
   (hLimit w (vLimit h (dungeon scene)), Nothing, Nothing)
   where

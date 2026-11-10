@@ -9,7 +9,7 @@ import Pixels.Canvas
 import Prolog.Protocol
 import Style.Colors (RGB)
 
-minimap :: Canvas s -> Run -> [RoomView] -> Viewport -> Int -> ST s ()
+minimap :: Canvas s -> LevelRun -> [RoomView] -> Viewport -> Int -> ST s ()
 minimap cv run shown port time = when (fits && not (null shown) && rows * cols > 1) $ do
   darkenRect cv 0.35 (bx - 2) (by - 2) (mw + 4) (mh + 4)
   forM_ [bx - 2 .. bx + mw + 1] $ \x -> do

@@ -160,7 +160,7 @@ scrollPanel n dx dy = do
       put game { scrolls = M.insert n delta (scrolls game) }
     _ -> pure ()
 
-contentOf :: Name -> Game -> Run -> Int -> Maybe Content
+contentOf :: Name -> Game -> LevelRun -> Int -> Maybe Content
 contentOf n game run w = case n of
   ProgramView   -> Just (programContent (mode game) run (stepIx game))
   QueryView     -> Just (queryContent (mode game) run)

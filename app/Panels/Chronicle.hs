@@ -8,12 +8,12 @@ import Style.Theme
 import Widgets.Panel
 import Widgets.Scroll
 
-chroniclePanel :: Run -> Int -> (Int, Int) -> Widget Name
+chroniclePanel :: LevelRun -> Int -> (Int, Int) -> Widget Name
 chroniclePanel run k delta = clickable ChronicleView $ reportExtent ChronicleView $
   panel (Panel "CHRONICLE" info aArcane 1) $ \w h -> renderContent (chronicleContent run k w) w h delta
   where info = if k == 0 then "" else "step " ++ show k ++ "/" ++ show (length (runSteps run))
 
-chronicleContent :: Run -> Int -> Int -> Content
+chronicleContent :: LevelRun -> Int -> Int -> Content
 chronicleContent run k width = Content allLines 5 (Just (Focus (length allLines - 1) 0 0)) Bottom
   where
     total = length (runSteps run)

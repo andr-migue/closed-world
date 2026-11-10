@@ -45,7 +45,7 @@ torchEmbers cv time r = forM_ (sconces r) $ \s -> forM_ [0 .. 1 :: Int] $ \i -> 
       ex = sconceX s + (hash (sconceX s) i ((time + i * 5) `div` 10) `mod` 3) - 1
   when (life < 6) $ blend cv (1 - fromIntegral life / 7) ex (sconceY s - 1 - life) (255, 160, 70)
 
-stepEffects :: Canvas s -> Layout -> Run -> Int -> Double -> Int -> ST s ()
+stepEffects :: Canvas s -> Layout -> LevelRun -> Int -> Double -> Int -> ST s ()
 stepEffects cv ly run k p time = case T.unpack . stepEvent <$> eventAt run k of
   Just "cut" -> forM_ (doorsChangedAt ly k "closed") $ \(x, y) ->
     forM_ [0 .. 5 :: Int] $ \i -> do

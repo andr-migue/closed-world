@@ -19,7 +19,7 @@ import Style.Theme
 import Widgets.KeyBar (chip)
 import Widgets.Panel
 
-resultDialog :: Game -> Run -> Widget Name
+resultDialog :: Game -> LevelRun -> Widget Name
 resultDialog game run = centerLayer $ fixedPanel (Panel title "" accent 2) 76 (if won then 20 else 16) $ \_ _ ->
   ( vBox $
       [ str " "
